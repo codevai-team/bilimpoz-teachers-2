@@ -1,0 +1,775 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+enum UserLanguage {
+  kg
+  ru
+}
+
+enum UserRole {
+  admin
+  teacher
+  student
+}
+
+enum UserStatus {
+  registered
+  verified
+  banned
+  deleted
+}
+
+enum NotificationStatus {
+  created
+  sending
+  finished
+  failed
+}
+
+enum NotificationFilter {
+  all_students
+  paid_students
+  free_students
+  specific_subscription
+  inactive
+}
+
+enum TeacherReferralStatus {
+  registered
+  paid
+}
+
+enum UserSubscriptionStatus {
+  active
+  inactive
+}
+
+enum LessonType {
+  standard
+  practice
+}
+
+enum AccessType {
+  free
+  paid
+}
+
+enum QuestionType {
+  math1
+  math2
+  analogy
+  rac
+  grammar
+  standard
+}
+
+enum QuestionTypeFrom {
+  from_lesson
+  from_teacher
+  from_trial
+  from_student
+  from_mentor
+}
+
+enum MaterialType {
+  lesson
+  teacher_test
+  trial_test
+  mentor_lesson
+}
+
+enum PassedQuestionStatus {
+  correct
+  wrong
+  time_is_up
+}
+
+enum DuelMode {
+  random_opponent
+  with_friends
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+  refunded
+}
+
+enum AuditLogsEventType {
+  take_teacher_test
+  create_test_for_student
+  take_tests_for_students
+  create_duel
+  take_duel
+  take_lesson
+  take_trial_test
+}
+
+enum DuelState {
+  pending
+  finished
+}
+
+enum ComplaintsType {
+  lesson
+  lesson_question
+  teacher_question
+  student_question
+  trial_question
+  discussion
+  mentor_lesson
+  student
+}
+
+enum ComplaintsStatus {
+  created
+  resolved
+}
+
+enum TrialTestStatus {
+  inactive
+  in_development
+  published
+}
+
+enum Companion {
+  student
+  ai
+}
+
+enum Region {
+  Batken
+  Chuy
+  Issyk_Kul
+  Jalal_Abad
+  Naryn
+  Osh
+  Talas
+}
+
+enum FoundUsVia {
+  youtube
+  google
+  tiktok
+  television
+  news
+  social_networks
+  friends_or_relatives
+  other
+}
+
+enum DailyTestTarget {
+  five_test
+  ten_test
+  twenty_test
+  thirty_test
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum VerificationCodeType {
+  password_reset
+  login
+}
+
+// ПРОФИЛЬ
+model Users {
+  id                 String      @id @default(cuid())
+  name              String
+  login             String      @unique
+  hash_password     String
+  profile_photo_url String?
+  telegram_id       String?     @unique
+  language          UserLanguage
+  status            UserStatus
+  role              UserRole
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+
+  // Relations
+  user_stats        User_stats?
+  user_data         User_data?
+  social_networks   Social_networks?
+  followers         User_follows[] @relation("Following")
+  following         User_follows[] @relation("Follower")
+  
+  // Courses and lessons
+  created_courses   Courses[]
+  mentor_lessons    Mentor_lessons[]
+  
+  // Tests and materials
+  created_teacher_tests Teacher_tests[]
+  created_trial_tests   Trial_tests[]
+  passed_materials      Passed_materials[]
+  
+  // Questions
+  passed_questions  Passed_questions[]
+  
+  // Duels
+  created_duels     Duels[] @relation("DuelCreator")
+  connected_duels   Duels[] @relation("DuelConnector")
+  won_duels         Duels[] @relation("DuelWinner")
+  duel_answers      Duel_answers[]
+  
+  // Subscriptions and payments
+  user_subscriptions User_subscriptions[]
+  payments          Payments[]
+  created_subscriptions Subscriptions[]
+  
+  // Notifications
+  created_notifications Notifications[]
+  posted_notifications  Notifications_history[]
+  
+  // Referrals
+  teacher_referrals Teacher_referrals[]
+  referral_links    Referral_links[]
+  
+  // Transactions and logs
+  sent_transactions     Points_transactions[] @relation("Sender")
+  received_transactions Points_transactions[] @relation("Receiver")
+  audit_logs           Audit_logs[]
+  
+  // Discussions and complaints
+  discussions      Discussions[]
+  complaints       Complaints[] @relation("Complainer")
+  resolved_complaints Complaints[] @relation("Resolver")
+  
+  // Verification codes
+  verification_codes Verification_codes[]
+
+  @@map("users")
+}
+
+model User_stats {
+  user_id            String   @id
+  questions_added    Int      @default(0)
+  questions_answered Int      @default(0)
+  correct_answers    Int      @default(0)
+  duels_played       Int      @default(0)
+  duels_won          Int      @default(0)
+  streak_days        Int      @default(0)
+  total_points       Int      @default(0)
+  updated_at         DateTime @updatedAt
+
+  user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_stats")
+}
+
+model User_data {
+  user_id           String            @id
+  region            Region?
+  found_us_via      FoundUsVia?
+  daily_test_target DailyTestTarget?
+  gender            Gender?
+  profile_url       String?
+  qr_code_url       String?
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+
+  user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_data")
+}
+
+model Social_networks {
+  id               String  @id @default(cuid())
+  user_id          String  @unique
+  telegram_login   String?
+  instagram_login  String?
+  whatsapp_login   String?
+
+  user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("social_networks")
+}
+
+model Verification_codes {
+  id         String                 @id @default(cuid())
+  user_id    String
+  hash_code  String
+  type       VerificationCodeType
+  created_at DateTime               @default(now())
+  expires_at DateTime
+  used_at    DateTime?
+
+  user Users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("verification_codes")
+  @@index([user_id])
+  @@index([type])
+}
+
+model User_follows {
+  id           String   @id @default(cuid())
+  follower_id  String
+  following_id String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  follower  Users @relation("Follower", fields: [follower_id], references: [id], onDelete: Cascade)
+  following Users @relation("Following", fields: [following_id], references: [id], onDelete: Cascade)
+
+  @@unique([follower_id, following_id])
+  @@map("user_follows")
+}
+
+// КУРСЫ И УРОКИ
+model Courses {
+  id                String         @id @default(cuid())
+  name              String
+  course_photo_url  String?
+  description       String
+  created_by        String
+  language          UserLanguage
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  creator       Users           @relation(fields: [created_by], references: [id])
+  lesson_groups Lesson_groups[]
+
+  @@map("courses")
+}
+
+model Lesson_groups {
+  id         String @id @default(cuid())
+  course_id  String
+  title      String
+  position   Int
+  color_code String
+
+  course  Courses   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  lessons Lessons[]
+
+  @@map("lesson_groups")
+}
+
+model Lessons {
+  id                String     @id @default(cuid())
+  lesson_group_id   String
+  title             String
+  video_url         String
+  lecture_url       String
+  type              LessonType
+  total_questions   Int        @default(50)
+  random_questions  Int        @default(10)
+  mistake_chance    Int        @default(2)
+  lesson_points     Int        @default(10)
+  position          Int
+  access_type       AccessType
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
+
+  lesson_group     Lesson_groups      @relation(fields: [lesson_group_id], references: [id], onDelete: Cascade)
+  discussions      Discussions[]
+
+  @@map("lessons")
+}
+
+// ДОПОЛНИТЕЛЬНЫЕ МАТЕРИАЛЫ
+model Teacher_tests {
+  id          String       @id @default(cuid())
+  name        String
+  description String
+  created_by  String
+  language    UserLanguage
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  creator          Users              @relation(fields: [created_by], references: [id])
+
+  @@map("teacher_tests")
+}
+
+model Trial_tests {
+  id                String                  @id @default(cuid())
+  name              String
+  description       String
+  price_with_point  Int
+  language          UserLanguage
+  status            TrialTestStatus         @default(in_development)
+  created_by        String
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
+
+  creator                 Users                     @relation(fields: [created_by], references: [id])
+  trial_question_groups   Trial_question_groups[]
+
+  @@map("trial_tests")
+}
+
+model Trial_question_groups {
+  id              String       @id @default(cuid())
+  trial_test_id   String
+  subject         QuestionType
+  title           String
+  description     String
+  total_questions Int
+  text_rac        String?
+  time_limit      Int
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  trial_test Trial_tests @relation(fields: [trial_test_id], references: [id], onDelete: Cascade)
+
+  @@map("trial_question_groups")
+}
+
+model Mentor_lessons {
+  id          String       @id @default(cuid())
+  title       String
+  lecture_url String
+  student_id  String
+  language    UserLanguage
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  student          Users              @relation(fields: [student_id], references: [id])
+
+  @@map("mentor_lessons")
+}
+
+model Passed_materials {
+  id            String       @id @default(cuid())
+  material_type MaterialType
+  material_id   String
+  passed_by     String
+
+  user Users @relation(fields: [passed_by], references: [id])
+
+  @@map("passed_materials")
+}
+
+model Contents {
+  id          String   @id @default(cuid())
+  content_url String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("contents")
+}
+
+// ВОПРОСЫ И ОТВЕТЫ
+model Questions {
+  id                   String           @id @default(cuid())
+  question             String
+  correct_variants_id  String
+  photo_url            String?
+  type_from            QuestionTypeFrom
+  type_question        QuestionType
+  source_id            String
+  points               Int              @default(1)
+  language             UserLanguage
+  time_limit           Int              @default(60)
+  explanation_ai       String?
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @updatedAt
+
+  answer_variants   Answer_variants[]
+  passed_questions  Passed_questions[]
+  duel_questions    Duel_questions[]
+  duel_answers      Duel_answers[]
+
+  @@map("questions")
+}
+
+model Answer_variants {
+  id          String   @id @default(cuid())
+  question_id String
+  value       String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  question Questions @relation(fields: [question_id], references: [id], onDelete: Cascade)
+
+  @@map("answer_variants")
+}
+
+model Passed_questions {
+  id          String                @id @default(cuid())
+  question_id String
+  user_id     String
+  status      PassedQuestionStatus
+  created_at  DateTime              @default(now())
+  updated_at  DateTime              @updatedAt
+
+  question Questions @relation(fields: [question_id], references: [id])
+  user     Users     @relation(fields: [user_id], references: [id])
+
+  @@map("passed_questions")
+}
+
+// ДУЭЛЬ
+model Duels {
+  id           String     @id @default(cuid())
+  mode         DuelMode
+  state        DuelState
+  created_by   String
+  connected_by String?
+  winner_id    String?
+  bid          Int
+  language     UserLanguage
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+
+  creator    Users @relation("DuelCreator", fields: [created_by], references: [id])
+  connector  Users? @relation("DuelConnector", fields: [connected_by], references: [id])
+  winner     Users? @relation("DuelWinner", fields: [winner_id], references: [id])
+
+  duel_questions Duel_questions[]
+  duel_answers   Duel_answers[]
+
+  @@map("duels")
+}
+
+model Duel_questions {
+  id          String @id @default(cuid())
+  duel_id     String
+  question_id String
+
+  duel     Duels     @relation(fields: [duel_id], references: [id], onDelete: Cascade)
+  question Questions @relation(fields: [question_id], references: [id])
+
+  @@map("duel_questions")
+}
+
+model Duel_answers {
+  id          String                @id @default(cuid())
+  duel_id     String
+  question_id String
+  user_id     String
+  status      PassedQuestionStatus
+  time        Int
+
+  duel     Duels     @relation(fields: [duel_id], references: [id], onDelete: Cascade)
+  question Questions @relation(fields: [question_id], references: [id])
+  user     Users     @relation(fields: [user_id], references: [id])
+
+  @@map("duel_answers")
+}
+
+// ПОДПИСКИ И ОПЛАТЫ
+model Subscriptions {
+  id                     String   @id @default(cuid())
+  name                   String
+  description            String
+  price                  Decimal  @db.Decimal(10, 2)
+  duration_days          Int?
+  max_duels              Int?
+  max_student_questions  Int?
+  max_mentor_lectures    Int?
+  features               String
+  created_by             String
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  creator            Users                @relation(fields: [created_by], references: [id])
+  user_subscriptions User_subscriptions[]
+
+  @@map("subscriptions")
+}
+
+model User_subscriptions {
+  id                 String                  @id @default(cuid())
+  user_id            String
+  subscription_id    String
+  start_date         DateTime
+  end_date           DateTime
+  status             UserSubscriptionStatus
+  remaining_duels    Int?
+  remaining_questions Int?
+  remaining_lectures  Int?
+  created_at         DateTime                @default(now())
+  updated_at         DateTime                @updatedAt
+
+  user         Users         @relation(fields: [user_id], references: [id])
+  subscription Subscriptions @relation(fields: [subscription_id], references: [id])
+  payments     Payments[]
+
+  @@map("user_subscriptions")
+}
+
+model Payments {
+  id                    String        @id @default(cuid())
+  subscription_id       String
+  user_id               String
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String
+  provider              String
+  provider_payment_id   String
+  status                PaymentStatus
+  metadata              String?
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+
+  subscription User_subscriptions @relation(fields: [subscription_id], references: [id])
+  user         Users              @relation(fields: [user_id], references: [id])
+
+  @@map("payments")
+}
+
+// УВЕДОМЛЕНИЯ
+model Notifications {
+  id          String       @id @default(cuid())
+  created_by  String
+  title       String
+  photo_url   String?
+  body        String
+  language    UserLanguage
+  cta_text    String?
+  cta_link    String?
+
+  creator Users                   @relation(fields: [created_by], references: [id])
+  history Notifications_history[]
+
+  @@map("notifications")
+}
+
+model Notifications_history {
+  id              String              @id @default(cuid())
+  notification_id String
+  posted_by       String
+  posted_at       DateTime
+  targets         Int?
+  delivered       Int?
+  status          NotificationStatus
+  error_text      String?
+  filter_name     NotificationFilter?
+  filter_value    String?
+
+  notification Notifications @relation(fields: [notification_id], references: [id])
+  poster       Users         @relation(fields: [posted_by], references: [id])
+
+  @@map("notifications_history")
+}
+
+// РЕФЕРАЛЬНАЯ СИСТЕМА
+model Teacher_referrals {
+  id                String                @id @default(cuid())
+  referral_link_id  String
+  student_id        String
+  status            TeacherReferralStatus
+  created_at        DateTime              @default(now())
+  updated_at        DateTime              @updatedAt
+
+  referral_link Referral_links @relation(fields: [referral_link_id], references: [id])
+  student       Users          @relation(fields: [student_id], references: [id])
+
+  @@map("teacher_referrals")
+}
+
+model Referral_links {
+  id            String @id @default(cuid())
+  teacher_id    String
+  referral_link String @unique
+
+  teacher           Users               @relation(fields: [teacher_id], references: [id])
+  teacher_referrals Teacher_referrals[]
+
+  @@map("referral_links")
+}
+
+// ОПЕРАЦИИ
+model Points_transactions {
+  id                     String   @id @default(cuid())
+  from_whom              String
+  send_balance_before    Int
+  send_balance_after     Int
+  to_whom                String
+  receive_balance_before Int
+  receive_balance_after  Int
+  amount                 Int
+  comment                String
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  sender   Users @relation("Sender", fields: [from_whom], references: [id])
+  receiver Users @relation("Receiver", fields: [to_whom], references: [id])
+
+  @@map("points_transactions")
+}
+
+model Audit_logs {
+  id         String              @id @default(cuid())
+  user_id    String
+  event_type AuditLogsEventType
+  created_at DateTime            @default(now())
+  updated_at DateTime            @updatedAt
+
+  user Users @relation(fields: [user_id], references: [id])
+
+  @@map("audit_logs")
+}
+
+// ЧАТЫ И СООБЩЕНИЯ
+model Discussions {
+  id               String   @id @default(cuid())
+  name             String
+  lesson_id        String
+  student_id       String
+  summarized_chat  String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  lesson          Lessons           @relation(fields: [lesson_id], references: [id])
+  student         Users             @relation(fields: [student_id], references: [id])
+  discussion_chat Discussion_chat[]
+
+  @@map("discussions")
+}
+
+model Discussion_chat {
+  id            String     @id @default(cuid())
+  discussion_id String
+  companion     Companion
+  text          String
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  discussion Discussions @relation(fields: [discussion_id], references: [id], onDelete: Cascade)
+
+  @@map("discussion_chat")
+}
+
+// НАСТРОЙКИ И ЖАЛОБЫ
+model Complaints {
+  id          String           @id @default(cuid())
+  text        String
+  type        ComplaintsType
+  source_id   String
+  status      ComplaintsStatus
+  answer      String?
+  complaining String
+  resolved_by String?
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+
+  complainer Users  @relation("Complainer", fields: [complaining], references: [id])
+  resolver   Users? @relation("Resolver", fields: [resolved_by], references: [id])
+
+  @@map("complaints")
+}
+
+model Settings {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  value      String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("settings")
+}

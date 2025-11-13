@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-700;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Кастомный скроллбар */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #606060;
+}
+
+/* Тонкий скроллбар для модальных окон */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 3px;
+}
+
+/* Стили для KaTeX в темной теме */
+.katex {
+  color: #ffffff;
+  font-size: 1.1em;
+}
+
+.katex .base {
+  color: #ffffff;
+}
+
+.katex .mord {
+  color: #ffffff;
+}
+
+.katex .mrel {
+  color: #ffffff;
+}
+
+.katex .mop {
+  color: #ffffff;
+}
+
+.katex .mbin {
+  color: #ffffff;
+}
+
+.katex .mopen {
+  color: #ffffff;
+}
+
+.katex .mclose {
+  color: #ffffff;
+}
+
+.katex .mpunct {
+  color: #ffffff;
+}
+
+.katex .mord.mathdefault {
+  color: #ffffff;
+}
+
+/* Блочные формулы */
+.katex-display {
+  margin: 1em 0;
+  padding: 0.5em;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+/* Встроенные формулы */
+.katex:not(.katex-display) {
+  background: #242424;
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
