@@ -1,34 +1,122 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import Button from '@/components/ui/Button'
+import CustomDatePicker from '@/components/ui/CustomDatePicker'
+import CustomTimePicker from '@/components/ui/CustomTimePicker'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface DateFilterProps {
   onPeriodChange: (period: string) => void
   selectedPeriod: string
+  onDateFromChange?: (date: string) => void
+  onDateToChange?: (date: string) => void
+  onTimeFromChange?: (time: string) => void
+  onTimeToChange?: (time: string) => void
 }
 
 const DateFilter: React.FC<DateFilterProps> = ({
   onPeriodChange,
-  selectedPeriod
+  selectedPeriod,
+  onDateFromChange,
+  onDateToChange,
+  onTimeFromChange,
+  onTimeToChange
 }) => {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [showCustomRange, setShowCustomRange] = useState(false)
   const [customDateFrom, setCustomDateFrom] = useState('')
   const [customDateTo, setCustomDateTo] = useState('')
   const [customTimeFrom, setCustomTimeFrom] = useState('')
   const [customTimeTo, setCustomTimeTo] = useState('')
 
-  const quickFilters = [
-    { value: 'today', label: 'Сегодня' },
-    { value: 'yesterday', label: 'Вчера' },
-    { value: 'week', label: 'Неделя' },
-    { value: 'month', label: 'Месяц' },
-  ]
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
+
+  const quickFilters = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'today', label: t('dashboard.today') },
+      { value: 'yesterday', label: t('dashboard.yesterday') },
+      { value: 'week', label: t('dashboard.week') },
+      { value: 'month', label: t('dashboard.month') },
+    ]
+  }, [t, mounted, ready])
+
+  // Функция для вычисления дат периода
+  const getPeriodDates = (periodValue: string) => {
+    const now = new Date()
+    let fromDate = new Date()
+    let toDate = new Date()
+
+    switch (periodValue) {
+      case 'today':
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      case 'yesterday':
+        fromDate.setDate(now.getDate() - 1)
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setDate(now.getDate() - 1)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      case 'week':
+        // Последние 7 дней
+        fromDate.setDate(now.getDate() - 6)
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      case 'month':
+        // Последние 30 дней
+        fromDate.setDate(now.getDate() - 29)
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      default:
+        return { dateFrom: '', timeFrom: '', dateTo: '', timeTo: '' }
+    }
+
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear()
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const day = date.getDate().toString().padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    const formatTime = (date: Date) => {
+      const hours = date.getHours().toString().padStart(2, '0')
+      const minutes = date.getMinutes().toString().padStart(2, '0')
+      return `${hours}:${minutes}`
+    }
+
+    return {
+      dateFrom: formatDate(fromDate),
+      timeFrom: formatTime(fromDate),
+      dateTo: formatDate(toDate),
+      timeTo: formatTime(toDate)
+    }
+  }
 
   const handleQuickFilter = (period: string) => {
     onPeriodChange(period)
     setShowCustomRange(false)
+    
+    // Автоматически устанавливаем даты для выбранного периода
+    if (onDateFromChange && onDateToChange && onTimeFromChange && onTimeToChange) {
+      const dates = getPeriodDates(period)
+      onDateFromChange(dates.dateFrom)
+      onTimeFromChange(dates.timeFrom)
+      onDateToChange(dates.dateTo)
+      onTimeToChange(dates.timeTo)
+    }
   }
 
   const handleCustomApply = () => {
@@ -40,12 +128,12 @@ const DateFilter: React.FC<DateFilterProps> = ({
   return (
     <div className="bg-[#151515] rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Период</h3>
+        <h3 className="text-lg font-semibold text-white">{getText('dashboard.period', 'Период')}</h3>
         <button
           onClick={() => setShowCustomRange(!showCustomRange)}
           className="text-sm text-gray-400 hover:text-white transition-colors"
         >
-          Настроить
+          {getText('dashboard.configure', 'Настроить')}
         </button>
       </div>
 
@@ -72,24 +160,20 @@ const DateFilter: React.FC<DateFilterProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                От даты
+                {getText('dashboard.fromDate', 'От даты')}
               </label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={customDateFrom}
-                onChange={(e) => setCustomDateFrom(e.target.value)}
-                className="w-full px-3 py-2 bg-[#242424] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                onChange={setCustomDateFrom}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                До даты
+                {getText('dashboard.toDate', 'До даты')}
               </label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={customDateTo}
-                onChange={(e) => setCustomDateTo(e.target.value)}
-                className="w-full px-3 py-2 bg-[#242424] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                onChange={setCustomDateTo}
               />
             </div>
           </div>
@@ -97,24 +181,20 @@ const DateFilter: React.FC<DateFilterProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Время от
+                {getText('dashboard.timeFrom', 'Время от')}
               </label>
-              <input
-                type="time"
+              <CustomTimePicker
                 value={customTimeFrom}
-                onChange={(e) => setCustomTimeFrom(e.target.value)}
-                className="w-full px-3 py-2 bg-[#242424] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                onChange={setCustomTimeFrom}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Время до
+                {getText('dashboard.timeTo', 'Время до')}
               </label>
-              <input
-                type="time"
+              <CustomTimePicker
                 value={customTimeTo}
-                onChange={(e) => setCustomTimeTo(e.target.value)}
-                className="w-full px-3 py-2 bg-[#242424] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                onChange={setCustomTimeTo}
               />
             </div>
           </div>
@@ -125,7 +205,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
             onClick={handleCustomApply}
             className="w-full"
           >
-            Применить
+            {getText('common.apply', 'Применить')}
           </Button>
         </div>
       )}
@@ -134,6 +214,7 @@ const DateFilter: React.FC<DateFilterProps> = ({
 }
 
 export default DateFilter
+
 
 
 

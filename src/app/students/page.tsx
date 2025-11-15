@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TeacherLayout from '@/components/teacher/TeacherLayout'
 import StatCard from '@/components/teacher/StatCard'
 import StudentsFilter from '@/components/teacher/StudentsFilter'
 import StudentCard from '@/components/teacher/StudentCard'
 import ReferralSystem from '@/components/teacher/ReferralSystem'
 import { Icons } from '@/components/ui/Icons'
+import { useTranslation } from '@/hooks/useTranslation'
 
 // Моковые данные учеников
 const mockStudents = [
@@ -59,10 +60,16 @@ const mockStudents = [
 ]
 
 export default function StudentsPage() {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [sortBy, setSortBy] = useState('name')
   const [students, setStudents] = useState(mockStudents)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Реферальная система
   const referralData = {
@@ -115,7 +122,7 @@ export default function StudentsPage() {
   }
 
   const handleBlockStudent = (studentId: string) => {
-    if (confirm('Вы уверены, что хотите заблокировать этого ученика?')) {
+    if (confirm(t('students.confirmations.blockStudent'))) {
       setStudents(prev =>
         prev.map(s =>
           s.id === studentId
@@ -137,7 +144,7 @@ export default function StudentsPage() {
   }
 
   const handleDeleteStudent = (studentId: string) => {
-    if (confirm('Вы уверены, что хотите удалить этого ученика? Это действие нельзя отменить.')) {
+    if (confirm(t('students.confirmations.deleteStudent'))) {
       setStudents(prev => prev.filter(s => s.id !== studentId))
     }
   }
@@ -152,40 +159,54 @@ export default function StudentsPage() {
     // Здесь можно открыть модальное окно для приглашения
   }
 
+  // Предотвращаем ошибки гидратации, пока i18n не готов
+  if (!mounted || !ready) {
+    return (
+      <TeacherLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Ученики</h1>
+            <p className="text-gray-400">Загрузка...</p>
+          </div>
+        </div>
+      </TeacherLayout>
+    )
+  }
+
   return (
     <TeacherLayout>
       <div className="space-y-6">
         {/* Заголовок страницы */}
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">
-            Ученики
+            {t('students.title')}
           </h1>
           <p className="text-gray-400">
-            Управление учениками и приглашение новых через реферальную систему
+            {t('students.description')}
           </p>
         </div>
 
         {/* Статистические карточки */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Всего учеников"
+            title={t('students.stats.total')}
             value={stats.total}
             icon={Icons.Users}
           />
           <StatCard
-            title="Активные"
+            title={t('students.stats.active')}
             value={stats.active}
             icon={Icons.UserCheck}
             onClick={() => setStatus('active')}
           />
           <StatCard
-            title="Неактивные"
+            title={t('students.stats.inactive')}
             value={stats.inactive}
             icon={Icons.UserX}
             onClick={() => setStatus('inactive')}
           />
           <StatCard
-            title="Заблокированные"
+            title={t('students.stats.banned')}
             value={stats.banned}
             icon={Icons.UserMinus}
             onClick={() => setStatus('banned')}
@@ -218,12 +239,12 @@ export default function StudentsPage() {
             <div className="bg-[#151515] rounded-2xl p-12 text-center">
               <Icons.Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
-                Нет учеников
+                {t('students.empty.title')}
               </h3>
               <p className="text-gray-400 mb-4">
                 {search || status !== 'all' 
-                  ? 'По выбранным фильтрам ученики не найдены'
-                  : 'Пока нет учеников. Пригласите первого ученика!'
+                  ? t('students.empty.noResults')
+                  : t('students.empty.noStudents')
                 }
               </p>
               {!search && status === 'all' && (
@@ -232,7 +253,7 @@ export default function StudentsPage() {
                   className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors"
                 >
                   <Icons.Plus className="h-4 w-4" />
-                  Пригласить ученика
+                  {t('students.empty.inviteButton')}
                 </button>
               )}
             </div>
@@ -253,14 +274,14 @@ export default function StudentsPage() {
         {filteredAndSortedStudents.length > 0 && (
           <div className="flex items-center justify-between p-4 bg-[#151515] rounded-2xl">
             <span className="text-sm text-gray-400">
-              Показано 1-{filteredAndSortedStudents.length} из {filteredAndSortedStudents.length}
+              {t('students.pagination.showing')} 1-{filteredAndSortedStudents.length} {t('students.pagination.of')} {filteredAndSortedStudents.length}
             </span>
             <div className="flex items-center gap-2">
               <button 
                 disabled 
                 className="px-3 py-2 bg-[#242424] rounded-lg text-gray-400 opacity-50 cursor-not-allowed"
               >
-                Предыдущая
+                {t('students.pagination.previous')}
               </button>
               <button className="px-3 py-2 bg-white text-black rounded-lg font-medium">
                 1
@@ -269,7 +290,7 @@ export default function StudentsPage() {
                 disabled 
                 className="px-3 py-2 bg-[#242424] rounded-lg text-gray-400 opacity-50 cursor-not-allowed"
               >
-                Следующая
+                {t('students.pagination.next')}
               </button>
             </div>
           </div>

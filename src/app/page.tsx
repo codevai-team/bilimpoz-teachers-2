@@ -1,13 +1,20 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TeacherLayout from '@/components/teacher/TeacherLayout'
 import StatCard from '@/components/teacher/StatCard'
 import DateFilter from '@/components/teacher/DateFilter'
 import { Icons } from '@/components/ui/Icons'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function HomePage() {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState('week')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Моковые данные статистики
   const stats = {
@@ -24,38 +31,58 @@ export default function HomePage() {
     // Здесь можно загрузить данные для выбранного периода
   }
 
+  // Fallback значения для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
+
+  // Предотвращаем ошибки гидратации, пока i18n не готов
+  if (!mounted || !ready) {
+    return (
+      <TeacherLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Главная</h1>
+            <p className="text-gray-400">Загрузка...</p>
+          </div>
+        </div>
+      </TeacherLayout>
+    )
+  }
+
   return (
     <TeacherLayout>
       <div className="space-y-6">
         {/* Заголовок страницы */}
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">
-            Главная
+            {t('dashboard.title')}
           </h1>
           <p className="text-gray-400">
-            Управление учебным процессом и анализ активности
+            {t('dashboard.description')}
           </p>
         </div>
 
         {/* Статистические карточки */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Всего"
+            title={t('dashboard.stats.total')}
             value={stats.activeStudents}
             icon={Icons.Users}
           />
           <StatCard
-            title="Активные"
+            title={t('dashboard.stats.active')}
             value={stats.conductedLessons}
             icon={Icons.TrendingUp}
           />
           <StatCard
-            title="Новые"
+            title={t('dashboard.stats.new')}
             value={stats.newQuestions}
             icon={Icons.User}
           />
           <StatCard
-            title="Заблокированные"
+            title={t('dashboard.stats.blocked')}
             value={stats.blockedUsers}
             icon={Icons.XCircle}
           />
@@ -74,24 +101,24 @@ export default function HomePage() {
           {/* Дополнительная статистика */}
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard
-              title="Проведённые уроки"
+              title={t('dashboard.stats.conductedLessons')}
               value={stats.conductedLessons}
               icon={Icons.BookOpen}
               onClick={() => console.log('Переход к урокам')}
             />
             <StatCard
-              title="Новые вопросы"
+              title={t('dashboard.stats.newQuestions')}
               value={stats.newQuestions}
               icon={Icons.HelpCircle}
               onClick={() => console.log('Переход к вопросам')}
             />
             <StatCard
-              title="Баллы"
+              title={t('dashboard.stats.totalPoints')}
               value={stats.totalPoints}
               icon={Icons.Award}
             />
             <StatCard
-              title="Рост за месяц"
+              title={t('dashboard.stats.monthGrowth')}
               value={stats.monthGrowth}
               icon={Icons.TrendingUp}
             />
@@ -102,11 +129,11 @@ export default function HomePage() {
         <div className="bg-[#151515] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-white">
-              График активности
+              {t('dashboard.activityChart')}
             </h3>
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <Icons.TrendingUp className="h-4 w-4" />
-              <span>За последние 7 дней</span>
+              <span>{t('dashboard.last7Days')}</span>
             </div>
           </div>
           
@@ -114,8 +141,8 @@ export default function HomePage() {
           <div className="h-64 bg-[#242424] rounded-lg flex items-center justify-center">
             <div className="text-center">
               <Icons.BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400">График активности</p>
-              <p className="text-sm text-gray-500 mt-1">Данные загружаются...</p>
+              <p className="text-gray-400">{t('dashboard.activityChart')}</p>
+              <p className="text-sm text-gray-500 mt-1">{t('dashboard.chartLoading')}</p>
             </div>
           </div>
         </div>
@@ -123,7 +150,7 @@ export default function HomePage() {
         {/* Быстрые действия */}
         <div className="bg-[#151515] rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">
-            Быстрые действия
+            {t('dashboard.quickActions')}
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -132,8 +159,8 @@ export default function HomePage() {
                 <Icons.HelpCircle className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-white">Новые вопросы</p>
-                <p className="text-sm text-gray-400">Ответить на вопросы учеников</p>
+                <p className="font-medium text-white">{t('dashboard.newQuestionsAction')}</p>
+                <p className="text-sm text-gray-400">{t('dashboard.newQuestionsActionDesc')}</p>
               </div>
             </button>
 
@@ -142,8 +169,8 @@ export default function HomePage() {
                 <Icons.MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-white">Обсуждения</p>
-                <p className="text-sm text-gray-400">Проверить активные чаты</p>
+                <p className="font-medium text-white">{t('dashboard.discussionsAction')}</p>
+                <p className="text-sm text-gray-400">{t('dashboard.discussionsActionDesc')}</p>
               </div>
             </button>
 
@@ -155,8 +182,8 @@ export default function HomePage() {
                 <Icons.Users className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-white">Ученики</p>
-                <p className="text-sm text-gray-400">Управление учениками и реферальная система</p>
+                <p className="font-medium text-white">{t('dashboard.studentsAction')}</p>
+                <p className="text-sm text-gray-400">{t('dashboard.studentsActionDesc')}</p>
               </div>
             </button>
           </div>

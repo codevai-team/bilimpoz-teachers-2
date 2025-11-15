@@ -1,8 +1,11 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import Select, { SelectOption } from '@/components/ui/Select'
+import CustomDatePicker from '@/components/ui/CustomDatePicker'
+import CustomTimePicker from '@/components/ui/CustomTimePicker'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface QuestionsFilterProps {
   questionType: string
@@ -51,43 +54,140 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
   onTimeToChange,
   onClearFilters
 }) => {
-  const questionTypeOptions: SelectOption[] = [
-    { value: 'all', label: 'Все типы вопросов' },
-    { value: 'math1', label: 'Математика 1' },
-    { value: 'math2', label: 'Математика 2' },
-    { value: 'analogy', label: 'Аналогия' },
-    { value: 'rac', label: 'РАЦ' },
-    { value: 'grammar', label: 'Грамматика' },
-    { value: 'standard', label: 'Стандартный' },
-  ]
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
 
-  const sourceOptions: SelectOption[] = [
-    { value: 'all', label: 'Все источники' },
-    { value: 'from_lesson', label: 'Из урока' },
-    { value: 'from_teacher', label: 'От преподавателя' },
-    { value: 'from_trial', label: 'Из пробного теста' },
-    { value: 'from_student', label: 'От ученика' },
-    { value: 'from_mentor', label: 'От ментора' },
-  ]
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  const languageOptions: SelectOption[] = [
-    { value: 'all', label: 'Все языки' },
-    { value: 'ru', label: 'Русский' },
-    { value: 'kg', label: 'Кыргызский' },
-  ]
+  // Fallback значения для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
 
-  const sortByOptions: SelectOption[] = [
-    { value: 'created_at', label: 'По дате создания' },
-    { value: 'updated_at', label: 'По дате обновления' },
-    { value: 'question', label: 'По тексту вопроса' },
-  ]
+  const questionTypeOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'all', label: t('questions.questionTypes.all') },
+      { value: 'math1', label: t('questions.questionTypes.math1') },
+      { value: 'math2', label: t('questions.questionTypes.math2') },
+      { value: 'analogy', label: t('questions.questionTypes.analogy') },
+      { value: 'rac', label: t('questions.questionTypes.rac') },
+      { value: 'grammar', label: t('questions.questionTypes.grammar') },
+      { value: 'standard', label: t('questions.questionTypes.standard') },
+    ]
+  }, [t, mounted, ready])
 
-  const periodOptions = [
-    { value: 'today', label: 'Сегодня' },
-    { value: 'yesterday', label: 'Вчера' },
-    { value: 'week', label: 'Неделя' },
-    { value: 'month', label: 'Месяц' },
-  ]
+  const sourceOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'all', label: t('questions.sources.all') },
+      { value: 'from_lesson', label: t('questions.sources.from_lesson') },
+      { value: 'from_teacher', label: t('questions.sources.from_teacher') },
+      { value: 'from_trial', label: t('questions.sources.from_trial') },
+      { value: 'from_student', label: t('questions.sources.from_student') },
+      { value: 'from_mentor', label: t('questions.sources.from_mentor') },
+    ]
+  }, [t, mounted, ready])
+
+  const languageOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'all', label: t('questions.languages.all') },
+      { value: 'ru', label: t('questions.languages.ru') },
+      { value: 'kg', label: t('questions.languages.kg') },
+    ]
+  }, [t, mounted, ready])
+
+  const sortByOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'created_at', label: t('questions.sortOptions.created_at') },
+      { value: 'updated_at', label: t('questions.sortOptions.updated_at') },
+      { value: 'question', label: t('questions.sortOptions.question') },
+    ]
+  }, [t, mounted, ready])
+
+  const periodOptions = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'today', label: t('dashboard.today') },
+      { value: 'yesterday', label: t('dashboard.yesterday') },
+      { value: 'week', label: t('dashboard.week') },
+      { value: 'month', label: t('dashboard.month') },
+    ]
+  }, [t, mounted, ready])
+
+  // Функция для вычисления дат периода
+  const getPeriodDates = (periodValue: string) => {
+    const now = new Date()
+    let fromDate = new Date()
+    let toDate = new Date()
+
+    switch (periodValue) {
+      case 'today':
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      case 'yesterday':
+        fromDate.setDate(now.getDate() - 1)
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setDate(now.getDate() - 1)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      case 'week':
+        // Последние 7 дней
+        fromDate.setDate(now.getDate() - 6)
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      case 'month':
+        // Последние 30 дней
+        fromDate.setDate(now.getDate() - 29)
+        fromDate.setHours(0, 0, 0, 0)
+        toDate.setHours(23, 59, 59, 999)
+        break
+      default:
+        return { dateFrom: '', timeFrom: '', dateTo: '', timeTo: '' }
+    }
+
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear()
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const day = date.getDate().toString().padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    const formatTime = (date: Date) => {
+      const hours = date.getHours().toString().padStart(2, '0')
+      const minutes = date.getMinutes().toString().padStart(2, '0')
+      return `${hours}:${minutes}`
+    }
+
+    return {
+      dateFrom: formatDate(fromDate),
+      timeFrom: formatTime(fromDate),
+      dateTo: formatDate(toDate),
+      timeTo: formatTime(toDate)
+    }
+  }
+
+  // Обработчик изменения периода
+  const handlePeriodChange = (newPeriod: string) => {
+    onPeriodChange(newPeriod)
+    
+    // Автоматически устанавливаем даты для выбранного периода
+    if (newPeriod !== 'all' && newPeriod !== 'custom') {
+      const dates = getPeriodDates(newPeriod)
+      onDateFromChange(dates.dateFrom)
+      onTimeFromChange(dates.timeFrom)
+      onDateToChange(dates.dateTo)
+      onTimeToChange(dates.timeTo)
+    }
+  }
+
 
   return (
     <div className="bg-[#151515] rounded-2xl p-6 space-y-6">
@@ -97,25 +197,25 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
           value={questionType}
           onChange={onQuestionTypeChange}
           options={questionTypeOptions}
-          placeholder="Все типы вопросов"
+          placeholder={getText('questions.questionTypes.all', 'Все типы вопросов')}
         />
         <Select
           value={source}
           onChange={onSourceChange}
           options={sourceOptions}
-          placeholder="Все источники"
+          placeholder={getText('questions.sources.all', 'Все источники')}
         />
         <Select
           value={language}
           onChange={onLanguageChange}
           options={languageOptions}
-          placeholder="Все языки"
+          placeholder={getText('questions.languages.all', 'Все языки')}
         />
         <Select
           value={sortBy}
           onChange={onSortByChange}
           options={sortByOptions}
-          placeholder="По дате создания"
+          placeholder={getText('questions.sortOptions.created_at', 'По дате создания')}
         />
       </div>
 
@@ -124,7 +224,7 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
         <Icons.Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Поиск по тексту вопроса..."
+          placeholder={getText('common.search', 'Поиск...')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-12 pr-4 py-3 bg-[#0b0b0b] border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out"
@@ -134,13 +234,13 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
       {/* Период */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-3">
-          Период:
+          {getText('questions.period', 'Период')}:
         </label>
         <div className="flex flex-wrap gap-2">
           {periodOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => onPeriodChange(option.value)}
+              onClick={() => handlePeriodChange(option.value)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 period === option.value
                   ? 'bg-white text-black'
@@ -158,58 +258,34 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
         {/* От даты */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-3">
-            От даты:
+            {getText('questions.fromDate', 'От даты')}:
           </label>
           <div className="space-y-3">
-            <div className="relative">
-              <Icons.Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => onDateFromChange(e.target.value)}
-                placeholder="Выберите дату"
-                className="w-full pl-12 pr-4 py-3 bg-[#0b0b0b] border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out"
-              />
-            </div>
-            <div className="relative">
-              <Icons.Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="time"
-                value={timeFrom}
-                onChange={(e) => onTimeFromChange(e.target.value)}
-                placeholder="Время"
-                className="w-full pl-12 pr-4 py-3 bg-[#0b0b0b] border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out"
-              />
-            </div>
+            <CustomDatePicker
+              value={dateFrom}
+              onChange={onDateFromChange}
+            />
+            <CustomTimePicker
+              value={timeFrom}
+              onChange={onTimeFromChange}
+            />
           </div>
         </div>
 
         {/* До даты */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-3">
-            До даты:
+            {getText('questions.toDate', 'До даты')}:
           </label>
           <div className="space-y-3">
-            <div className="relative">
-              <Icons.Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => onDateToChange(e.target.value)}
-                placeholder="Выберите дату"
-                className="w-full pl-12 pr-4 py-3 bg-[#0b0b0b] border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out"
-              />
-            </div>
-            <div className="relative">
-              <Icons.Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="time"
-                value={timeTo}
-                onChange={(e) => onTimeToChange(e.target.value)}
-                placeholder="Время"
-                className="w-full pl-12 pr-4 py-3 bg-[#0b0b0b] border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out"
-              />
-            </div>
+            <CustomDatePicker
+              value={dateTo}
+              onChange={onDateToChange}
+            />
+            <CustomTimePicker
+              value={timeTo}
+              onChange={onTimeToChange}
+            />
           </div>
         </div>
       </div>
@@ -220,7 +296,7 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
           onClick={onClearFilters}
           className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
         >
-          Очистить фильтры
+          {getText('questions.clearFilters', 'Очистить фильтры')}
         </button>
       </div>
     </div>

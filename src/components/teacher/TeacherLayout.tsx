@@ -21,23 +21,20 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed Container with Header and Content */}
-      <div className="fixed inset-0 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-4 pb-0 flex-shrink-0">
-          <Header onMenuToggle={handleMenuToggle} />
-        </div>
+      {/* Header */}
+      <div className="p-4 pb-0">
+        <Header onMenuToggle={handleMenuToggle} />
+      </div>
 
-        {/* Main Container with Sidebar and Content */}
-        <div className="flex-1 flex overflow-hidden pt-4 gap-4">
-          {/* Sidebar */}
-          <Sidebar isOpen={isSidebarOpen} onClose={handleSidebarClose} />
+      {/* Main Container with Sidebar and Content */}
+      <div className="flex h-[calc(100vh-5rem)] p-4 pt-0 gap-4">
+        {/* Sidebar */}
+        <Sidebar isOpen={isSidebarOpen} onClose={handleSidebarClose} />
 
-          {/* Main Content */}
-          <main className="flex-1 overflow-y-auto p-4 lg:p-6 min-w-0">
-            {children}
-          </main>
-        </div>
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-[#151515] rounded-2xl p-6">
+          {children}
+        </main>
       </div>
     </div>
   )

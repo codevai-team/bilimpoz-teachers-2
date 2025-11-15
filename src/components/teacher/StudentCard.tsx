@@ -1,8 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import Tooltip from '@/components/ui/Tooltip'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface Student {
   id: string
@@ -24,32 +25,72 @@ const StudentCard: React.FC<StudentCardProps> = ({
   student,
   onViewDetails
 }) => {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
   const getStatusConfig = (status: Student['status']) => {
+    if (!mounted || !ready) {
+      // Fallback значения до готовности переводов
+      switch (status) {
+        case 'active':
+          return {
+            label: 'Активен',
+            bgColor: 'bg-green-500/10',
+            textColor: 'text-green-400',
+            borderColor: 'border-green-500/20'
+          }
+        case 'inactive':
+          return {
+            label: 'Неактивен',
+            bgColor: 'bg-yellow-500/10',
+            textColor: 'text-yellow-400',
+            borderColor: 'border-yellow-500/20'
+          }
+        case 'banned':
+          return {
+            label: 'Заблокирован',
+            bgColor: 'bg-red-500/10',
+            textColor: 'text-red-400',
+            borderColor: 'border-red-500/20'
+          }
+        default:
+          return {
+            label: 'Неизвестно',
+            bgColor: 'bg-gray-500/10',
+            textColor: 'text-gray-400',
+            borderColor: 'border-gray-500/20'
+          }
+      }
+    }
     switch (status) {
       case 'active':
         return {
-          label: 'Активен',
+          label: t('students.card.status.active'),
           bgColor: 'bg-green-500/10',
           textColor: 'text-green-400',
           borderColor: 'border-green-500/20'
         }
       case 'inactive':
         return {
-          label: 'Неактивен',
+          label: t('students.card.status.inactive'),
           bgColor: 'bg-yellow-500/10',
           textColor: 'text-yellow-400',
           borderColor: 'border-yellow-500/20'
         }
       case 'banned':
         return {
-          label: 'Заблокирован',
+          label: t('students.card.status.banned'),
           bgColor: 'bg-red-500/10',
           textColor: 'text-red-400',
           borderColor: 'border-red-500/20'
         }
       default:
         return {
-          label: 'Неизвестно',
+          label: t('students.card.status.unknown'),
           bgColor: 'bg-gray-500/10',
           textColor: 'text-gray-400',
           borderColor: 'border-gray-500/20'
@@ -61,6 +102,12 @@ const StudentCard: React.FC<StudentCardProps> = ({
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU')
+  }
+
+  // Fallback значения для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
   }
 
   return (
@@ -90,7 +137,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
               </span>
             </div>
             <p className="text-sm text-gray-400">
-              Регистрация: {formatDate(student.registrationDate)}
+              {getText('students.card.registration', 'Регистрация:')} {formatDate(student.registrationDate)}
             </p>
           </div>
         </div>
@@ -99,28 +146,28 @@ const StudentCard: React.FC<StudentCardProps> = ({
         <div className="hidden md:flex items-center gap-6 flex-shrink-0">
           <div className="text-center min-w-[80px]">
             <p className="text-lg font-bold text-white">{student.activity7Days}</p>
-            <p className="text-xs text-gray-400">Активность (7 дней)</p>
+            <p className="text-xs text-gray-400">{getText('students.card.activity7Days', 'Активность (7 дней)')}</p>
           </div>
           <div className="text-center min-w-[80px]">
             <p className="text-lg font-bold text-white">{student.completedLessons}</p>
-            <p className="text-xs text-gray-400">Уроков</p>
+            <p className="text-xs text-gray-400">{getText('students.card.lessons', 'Уроков')}</p>
           </div>
           <div className="text-center min-w-[80px]">
             <p className="text-lg font-bold text-white">{student.points.toLocaleString()}</p>
-            <p className="text-xs text-gray-400">Баллы</p>
+            <p className="text-xs text-gray-400">{getText('students.card.points', 'Баллы')}</p>
           </div>
           <div className="text-center min-w-[80px]">
             <div className="flex items-center justify-center gap-1">
               <Icons.TrendingUp className="h-4 w-4 text-green-400" />
               <p className="text-sm font-medium text-green-400">+12%</p>
             </div>
-            <p className="text-xs text-gray-400">Рост</p>
+            <p className="text-xs text-gray-400">{getText('students.card.growth', 'Рост')}</p>
           </div>
         </div>
 
         {/* Правая часть: Действия */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Tooltip text="Детали">
+          <Tooltip text={getText('students.card.details', 'Детали')}>
             <button
               onClick={() => onViewDetails(student.id)}
               className="p-2 rounded-lg bg-[#242424] hover:bg-[#2a2a2a] transition-colors"
@@ -136,22 +183,22 @@ const StudentCard: React.FC<StudentCardProps> = ({
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
             <p className="text-lg font-bold text-white">{student.activity7Days}</p>
-            <p className="text-xs text-gray-400">Активность (7 дней)</p>
+            <p className="text-xs text-gray-400">{getText('students.card.activity7Days', 'Активность (7 дней)')}</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-white">{student.completedLessons}</p>
-            <p className="text-xs text-gray-400">Пройдено уроков</p>
+            <p className="text-xs text-gray-400">{getText('students.card.completedLessons', 'Пройдено уроков')}</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-white">{student.points.toLocaleString()}</p>
-            <p className="text-xs text-gray-400">Баллы</p>
+            <p className="text-xs text-gray-400">{getText('students.card.points', 'Баллы')}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
               <Icons.TrendingUp className="h-4 w-4 text-green-400" />
               <p className="text-sm font-medium text-green-400">+12%</p>
             </div>
-            <p className="text-xs text-gray-400">Рост за неделю</p>
+            <p className="text-xs text-gray-400">{getText('students.card.growthWeek', 'Рост за неделю')}</p>
           </div>
         </div>
       </div>

@@ -1,0 +1,371 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "create": "Создать",
+    "close": "Закрыть",
+    "clear": "Очистить",
+    "search": "Поиск...",
+    "filter": "Фильтр",
+    "all": "Все",
+    "yes": "Да",
+    "no": "Нет",
+    "apply": "Применить",
+    "reset": "Сбросить",
+    "user": "Пользователь",
+    "roleNotSpecified": "Роль не указана"
+  },
+  "header": {
+    "title": "Bilimpoz Teacher",
+    "logout": "Выйти",
+    "profile": "Профиль",
+    "settings": "Настройки"
+  },
+  "sidebar": {
+    "dashboard": "Главная",
+    "students": "Ученики",
+    "questions": "Вопросы",
+    "discussions": "Обсуждения",
+    "referrals": "Рефералы",
+    "settings": "Настройки"
+  },
+  "dashboard": {
+    "title": "Главная",
+    "description": "Управление учебным процессом и анализ активности",
+    "stats": {
+      "total": "Всего",
+      "active": "Активные",
+      "new": "Новые",
+      "blocked": "Заблокированные",
+      "conductedLessons": "Проведённые уроки",
+      "newQuestions": "Новые вопросы",
+      "totalPoints": "Баллы",
+      "monthGrowth": "Рост за месяц"
+    },
+    "period": "Период",
+    "configure": "Настроить",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "week": "Неделя",
+    "month": "Месяц",
+    "fromDate": "От даты",
+    "toDate": "До даты",
+    "timeFrom": "Время от",
+    "timeTo": "Время до",
+    "activityChart": "График активности",
+    "last7Days": "За последние 7 дней",
+    "chartLoading": "Данные загружаются...",
+    "quickActions": "Быстрые действия",
+    "newQuestionsAction": "Новые вопросы",
+    "newQuestionsActionDesc": "Ответить на вопросы учеников",
+    "discussionsAction": "Обсуждения",
+    "discussionsActionDesc": "Проверить активные чаты",
+    "studentsAction": "Ученики",
+    "studentsActionDesc": "Управление учениками и реферальная система"
+  },
+  "discussions": {
+    "title": "Обсуждения",
+    "description": "Коммуникация с учениками в рамках уроков",
+    "stats": {
+      "total": "Всего обсуждений",
+      "active": "Активные",
+      "closed": "Закрытые",
+      "unread": "Непрочитанные"
+    },
+    "filters": {
+      "title": "Фильтры",
+      "all": "Все",
+      "active": "Активные",
+      "closed": "Закрытые",
+      "withUnread": "С непрочитанными"
+    },
+    "empty": {
+      "title": "Нет обсуждений",
+      "description": "Пока нет активных обсуждений с учениками"
+    },
+    "card": {
+      "active": "Активное",
+      "closed": "Закрытое",
+      "student": "Ученик:",
+      "messages": "сообщений",
+      "lastMessage": "Последнее сообщение",
+      "openChat": "Открыть чат",
+      "summarize": "Суммировать",
+      "close": "Закрыть",
+      "justNow": "Только что",
+      "hoursAgo": "ч назад"
+    },
+    "chat": {
+      "chatWith": "Чат с",
+      "noMessages": "Пока нет сообщений",
+      "enterMessage": "Введите сообщение...",
+      "sendHint": "Нажмите Enter для отправки, Shift+Enter для новой строки"
+    }
+  },
+  "students": {
+    "title": "Ученики",
+    "description": "Управление учениками и приглашение новых через реферальную систему",
+    "stats": {
+      "total": "Всего учеников",
+      "active": "Активные",
+      "inactive": "Неактивные",
+      "banned": "Заблокированные"
+    },
+    "filters": {
+      "title": "Фильтры",
+      "clear": "Очистить",
+      "searchPlaceholder": "Поиск по имени...",
+      "statusPlaceholder": "Выберите статус",
+      "sortPlaceholder": "Сортировать по",
+      "statusOptions": {
+        "all": "Все статусы",
+        "active": "Активные",
+        "inactive": "Неактивные",
+        "banned": "Заблокированные"
+      },
+      "sortOptions": {
+        "name": "По имени",
+        "registration_date": "По дате регистрации",
+        "activity": "По активности",
+        "lessons": "По урокам",
+        "points": "По баллам"
+      }
+    },
+    "empty": {
+      "title": "Нет учеников",
+      "noResults": "По выбранным фильтрам ученики не найдены",
+      "noStudents": "Пока нет учеников. Пригласите первого ученика!",
+      "inviteButton": "Пригласить ученика"
+    },
+    "pagination": {
+      "showing": "Показано",
+      "of": "из",
+      "previous": "Предыдущая",
+      "next": "Следующая"
+    },
+    "card": {
+      "status": {
+        "active": "Активен",
+        "inactive": "Неактивен",
+        "banned": "Заблокирован",
+        "unknown": "Неизвестно"
+      },
+      "registration": "Регистрация:",
+      "activity7Days": "Активность (7 дней)",
+      "lessons": "Уроков",
+      "completedLessons": "Пройдено уроков",
+      "points": "Баллы",
+      "growth": "Рост",
+      "growthWeek": "Рост за неделю",
+      "details": "Детали"
+    },
+    "confirmations": {
+      "blockStudent": "Вы уверены, что хотите заблокировать этого ученика?",
+      "deleteStudent": "Вы уверены, что хотите удалить этого ученика? Это действие нельзя отменить."
+    },
+    "referral": {
+      "title": "Реферальная система",
+      "description": "Приглашайте новых учеников и получайте бонусы",
+      "inviteButton": "Пригласить ученика",
+      "clicks": "Переходы",
+      "registrations": "Регистрации",
+      "linkTitle": "Ваша реферальная ссылка",
+      "shareHint": "Поделитесь с учениками",
+      "copied": "Скопировано",
+      "copy": "Копировать",
+      "inviteMethods": "Способы приглашения",
+      "telegram": "Telegram",
+      "telegramHint": "Отправить в чат",
+      "whatsapp": "WhatsApp",
+      "whatsappHint": "Поделиться ссылкой",
+      "other": "Другие",
+      "otherHint": "Социальные сети",
+      "copyError": "Ошибка копирования:"
+    }
+  },
+  "questions": {
+    "title": "Вопросы",
+    "description": "Управление банком вопросов",
+    "createQuestion": "Создать вопрос",
+    "editQuestion": "Редактировать вопрос",
+    "totalQuestions": "Всего вопросов",
+    "activeQuestions": "Активные",
+    "problematicQuestions": "Проблемные",
+    "averageCorrect": "Средний % правильных",
+    "questionType": "Тип вопроса",
+    "source": "Источник",
+    "language": "Язык",
+    "sortBy": "Сортировать по",
+    "period": "Период",
+    "fromDate": "От даты",
+    "toDate": "До даты",
+    "clearFilters": "Очистить фильтры",
+    "foundQuestions": "Найдено вопросов",
+    "noQuestions": "Нет вопросов",
+    "noQuestionsDescription": "По выбранным фильтрам вопросы не найдены",
+    "questionTypes": {
+      "all": "Все типы вопросов",
+      "math1": "Математика 1",
+      "math2": "Математика 2",
+      "analogy": "Аналогия",
+      "rac": "РАЦ",
+      "grammar": "Грамматика",
+      "standard": "Стандартный"
+    },
+    "sources": {
+      "all": "Все источники",
+      "from_lesson": "Из урока",
+      "from_teacher": "От преподавателя",
+      "from_trial": "Из пробного теста",
+      "from_student": "От ученика",
+      "from_mentor": "От ментора"
+    },
+    "languages": {
+      "all": "Все языки",
+      "ru": "Русский",
+      "kg": "Кыргызский"
+    },
+    "sortOptions": {
+      "created_at": "По дате создания",
+      "updated_at": "По дате обновления",
+      "question": "По тексту вопроса"
+    },
+    "form": {
+      "questionText": "Текст вопроса",
+      "questionTextPlaceholder": "Введите текст вопроса",
+      "questionType": "Тип вопроса",
+      "source": "Источник",
+      "language": "Язык",
+      "sourceId": "ID источника",
+      "sourceIdPlaceholder": "Введите ID источника",
+      "points": "Баллы",
+      "timeLimit": "Лимит времени (сек)",
+      "photoUrl": "URL фото",
+      "photoUrlPlaceholder": "Введите URL фото (опционально)",
+      "aiExplanation": "AI объяснение",
+      "aiExplanationPlaceholder": "Введите AI объяснение (опционально)",
+      "answerVariants": "Варианты ответов",
+      "answerVariantPlaceholder": "Введите вариант ответа",
+      "correctAnswer": "Правильный ответ",
+      "addVariant": "Добавить вариант",
+      "removeVariant": "Удалить вариант",
+      "saveChanges": "Сохранить изменения",
+      "createQuestion": "Создать вопрос"
+    },
+    "tooltips": {
+      "edit": "Редактировать",
+      "details": "Детали",
+      "problematic": "Проблемный"
+    }
+  },
+  "referrals": {
+    "title": "Реферальная система",
+    "description": "Управление реферальными ссылками и статистикой",
+    "referralLink": "Реферальная ссылка",
+    "copyLink": "Скопировать ссылку",
+    "linkCopied": "Ссылка скопирована!",
+    "totalClicks": "Всего кликов",
+    "registrations": "Регистрации"
+  },
+  "settings": {
+    "title": "Настройки",
+    "description": "Редактирование профиля и персональных настроек",
+    "edit": "Редактировать",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "basicInfo": "Основная информация",
+    "profilePhoto": "Фото профиля",
+    "changePhoto": "Изменить фото",
+    "name": "Имя",
+    "namePlaceholder": "Введите имя",
+    "interfaceLanguage": "Язык интерфейса",
+    "socialNetworks": "Социальные сети",
+    "telegram": "Telegram",
+    "telegramPlaceholder": "@username",
+    "instagram": "Instagram",
+    "instagramPlaceholder": "username",
+    "whatsapp": "WhatsApp",
+    "whatsappPlaceholder": "+996555123456",
+    "changePassword": "Смена пароля",
+    "currentPassword": "Текущий пароль",
+    "currentPasswordPlaceholder": "Введите текущий пароль",
+    "newPassword": "Новый пароль",
+    "newPasswordPlaceholder": "Введите новый пароль",
+    "confirmPassword": "Подтверждение пароля",
+    "confirmPasswordPlaceholder": "Повторите новый пароль",
+    "changePasswordButton": "Изменить пароль",
+    "passwordMismatch": "Пароли не совпадают",
+    "logout": "Выход из системы",
+    "logoutDescription": "Завершить текущую сессию и выйти из аккаунта",
+    "logoutButton": "Выйти",
+    "settingsSaved": "Настройки сохранены",
+    "passwordChanged": "Пароль изменен"
+  },
+  "auth": {
+    "login": "Вход",
+    "logout": "Выход",
+    "email": "Email",
+    "password": "Пароль",
+    "rememberMe": "Запомнить меня",
+    "forgotPassword": "Забыли пароль?",
+    "loginButton": "Войти",
+    "loginError": "Ошибка входа",
+    "invalidCredentials": "Неверные учетные данные",
+    "confirmLogout": "Вы уверены, что хотите выйти из системы?"
+  },
+  "datePicker": {
+    "date": "Выберите дату",
+    "selectDate": "Выберите дату",
+    "day": "День",
+    "month": "Месяц",
+    "year": "Год",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "now": "Сейчас",
+    "clear": "Очистить",
+    "january": "Январь",
+    "february": "Февраль",
+    "march": "Март",
+    "april": "Апрель",
+    "may": "Май",
+    "june": "Июнь",
+    "july": "Июль",
+    "august": "Август",
+    "september": "Сентябрь",
+    "october": "Октябрь",
+    "november": "Ноябрь",
+    "december": "Декабрь"
+  },
+  "timePicker": {
+    "time": "Выберите время",
+    "selectTime": "Выберите время",
+    "hours": "Часы",
+    "minutes": "Минуты",
+    "now": "Сейчас",
+    "clear": "Очистить"
+  },
+  "tooltips": {
+    "bold": "Жирный",
+    "italic": "Курсив",
+    "strikethrough": "Зачёркнутый",
+    "underline": "Подчёркнутый",
+    "ai": "AI функции",
+    "imageToLatex": "Изображение в LaTeX",
+    "aiImproveText": "Улучшить текст с помощью AI"
+  },
+  "testEditor": {
+    "inlineFormula": "Формула в строке",
+    "blockFormula": "Формула в блоке",
+    "previewMode": "Режим предпросмотра",
+    "editMode": "Режим редактирования"
+  },
+  "roles": {
+    "teacher": "Преподаватель",
+    "admin": "Администратор",
+    "student": "Ученик",
+    "mentor": "Ментор"
+  }
+}

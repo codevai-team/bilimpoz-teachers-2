@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TeacherLayout from '@/components/teacher/TeacherLayout'
 import StatCard from '@/components/teacher/StatCard'
 import DiscussionCard from '@/components/teacher/DiscussionCard'
 import ChatModal from '@/components/teacher/ChatModal'
 import { Icons } from '@/components/ui/Icons'
+import { useTranslation } from '@/hooks/useTranslation'
 
 // Моковые данные
 const mockDiscussions = [
@@ -80,10 +81,21 @@ const mockMessages = [
 ]
 
 export default function DiscussionsPage() {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [discussions, setDiscussions] = useState(mockDiscussions)
   const [selectedDiscussion, setSelectedDiscussion] = useState<string | null>(null)
   const [chatMessages, setChatMessages] = useState(mockMessages)
   const [isChatOpen, setIsChatOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
 
   // Статистика
   const stats = {
@@ -154,38 +166,51 @@ export default function DiscussionsPage() {
 
   const selectedDiscussionData = discussions.find(d => d.id === selectedDiscussion)
 
+  if (!mounted || !ready) {
+    return (
+      <TeacherLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Обсуждения</h1>
+            <p className="text-gray-400">Загрузка...</p>
+          </div>
+        </div>
+      </TeacherLayout>
+    )
+  }
+
   return (
     <TeacherLayout>
       <div className="space-y-6">
         {/* Заголовок страницы */}
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">
-            Обсуждения
+            {t('discussions.title')}
           </h1>
           <p className="text-gray-400">
-            Коммуникация с учениками в рамках уроков
+            {t('discussions.description')}
           </p>
         </div>
 
         {/* Статистические карточки */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Всего обсуждений"
+            title={t('discussions.stats.total')}
             value={stats.total}
             icon={Icons.MessageCircle}
           />
           <StatCard
-            title="Активные"
+            title={t('discussions.stats.active')}
             value={stats.active}
             icon={Icons.Activity}
           />
           <StatCard
-            title="Закрытые"
+            title={t('discussions.stats.closed')}
             value={stats.closed}
             icon={Icons.CheckCircle}
           />
           <StatCard
-            title="Непрочитанные"
+            title={t('discussions.stats.unread')}
             value={stats.unread}
             icon={Icons.Bell}
             onClick={() => console.log('Показать непрочитанные')}
@@ -195,21 +220,21 @@ export default function DiscussionsPage() {
         {/* Фильтры */}
         <div className="bg-[#151515] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Фильтры</h3>
+            <h3 className="text-lg font-semibold text-white">{t('discussions.filters.title')}</h3>
           </div>
           
           <div className="flex flex-wrap gap-2">
             <button className="px-4 py-2 rounded-xl text-sm font-medium bg-[#363636] text-white border border-white">
-              Все
+              {t('discussions.filters.all')}
             </button>
             <button className="px-4 py-2 rounded-xl text-sm font-medium bg-[#242424] text-gray-400 border border-gray-700/50 hover:text-white hover:bg-[#363636] transition-all">
-              Активные
+              {t('discussions.filters.active')}
             </button>
             <button className="px-4 py-2 rounded-xl text-sm font-medium bg-[#242424] text-gray-400 border border-gray-700/50 hover:text-white hover:bg-[#363636] transition-all">
-              Закрытые
+              {t('discussions.filters.closed')}
             </button>
             <button className="px-4 py-2 rounded-xl text-sm font-medium bg-[#242424] text-gray-400 border border-gray-700/50 hover:text-white hover:bg-[#363636] transition-all">
-              С непрочитанными
+              {t('discussions.filters.withUnread')}
             </button>
           </div>
         </div>
@@ -220,10 +245,10 @@ export default function DiscussionsPage() {
             <div className="bg-[#151515] rounded-2xl p-12 text-center">
               <Icons.MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
-                Нет обсуждений
+                {t('discussions.empty.title')}
               </h3>
               <p className="text-gray-400">
-                Пока нет активных обсуждений с учениками
+                {t('discussions.empty.description')}
               </p>
             </div>
           ) : (
@@ -252,6 +277,9 @@ export default function DiscussionsPage() {
     </TeacherLayout>
   )
 }
+
+
+
 
 
 

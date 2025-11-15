@@ -11,6 +11,9 @@ const protectedRoutes = ['/', '/questions', '/discussions', '/settings', '/stude
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
+  // Получаем язык из cookie или используем 'ru' по умолчанию
+  const lang = request.cookies.get('lang')?.value || 'ru'
+  
   // Получаем токен из cookies
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
   
@@ -36,7 +39,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(homeUrl)
   }
   
-  return NextResponse.next()
+  // Создаем ответ и устанавливаем cookie языка
+  const response = NextResponse.next()
+  response.cookies.set('lang', lang, { path: '/', maxAge: 31536000 }) // 1 год
+  
+  return response
 }
 
 export const config = {
@@ -51,4 +58,5 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
+
 

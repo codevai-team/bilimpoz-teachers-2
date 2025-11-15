@@ -1,0 +1,50 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Импорт переводов
+import ruTranslations from '../locales/ru.json';
+import kyTranslations from '../locales/ky.json';
+
+const resources = {
+  ru: {
+    translation: ruTranslations,
+  },
+  ky: {
+    translation: kyTranslations,
+  },
+};
+
+// Инициализируем только если еще не инициализирован
+if (!i18n.isInitialized) {
+  i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      resources,
+      fallbackLng: 'ru',
+      debug: process.env.NODE_ENV === 'development',
+      
+      interpolation: {
+        escapeValue: false, // React уже экранирует значения
+      },
+      
+      detection: {
+        order: ['cookie', 'localStorage', 'navigator', 'htmlTag'],
+        caches: ['cookie', 'localStorage'],
+        lookupCookie: 'lang',
+        lookupLocalStorage: 'i18nextLng',
+        cookieMinutes: 525600, // 1 год в минутах
+      },
+      
+      react: {
+        useSuspense: false, // Отключаем Suspense для Next.js
+      },
+    })
+    .catch((error) => {
+      console.error('i18n initialization error:', error);
+    });
+}
+
+export default i18n;
+

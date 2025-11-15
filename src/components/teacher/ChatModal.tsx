@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import Button from '@/components/ui/Button'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface ChatMessage {
   id: string
@@ -28,9 +29,20 @@ const ChatModal: React.FC<ChatModalProps> = ({
   messages,
   onSendMessage
 }) => {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -73,7 +85,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <div>
             <h2 className="text-xl font-bold text-white">{discussionName}</h2>
-            <p className="text-sm text-gray-400">Чат с {studentName}</p>
+            <p className="text-sm text-gray-400">{getText('discussions.chat.chatWith', 'Чат с')} {studentName}</p>
           </div>
           <button
             onClick={onClose}
@@ -88,7 +100,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
           {messages.length === 0 ? (
             <div className="text-center py-12">
               <Icons.MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-400">Пока нет сообщений</p>
+              <p className="text-gray-400">{getText('discussions.chat.noMessages', 'Пока нет сообщений')}</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -124,7 +136,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Введите сообщение..."
+              placeholder={getText('discussions.chat.enterMessage', 'Введите сообщение...')}
               rows={3}
               className="flex-1 px-4 py-3 bg-[#242424] border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/20 resize-none"
             />
@@ -138,7 +150,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
             </Button>
           </div>
           <p className="text-xs text-gray-400 mt-2">
-            Нажмите Enter для отправки, Shift+Enter для новой строки
+            {getText('discussions.chat.sendHint', 'Нажмите Enter для отправки, Shift+Enter для новой строки')}
           </p>
         </div>
       </div>
@@ -147,6 +159,9 @@ const ChatModal: React.FC<ChatModalProps> = ({
 }
 
 export default ChatModal
+
+
+
 
 
 

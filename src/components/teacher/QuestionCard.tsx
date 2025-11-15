@@ -1,8 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import Tooltip from '@/components/ui/Tooltip'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface Question {
   id: string
@@ -21,6 +22,7 @@ interface QuestionCardProps {
   onMarkSolved: (questionId: string) => void
   onMarkIncorrect: (questionId: string) => void
   onViewDetails: (questionId: string) => void
+  onEdit?: (questionId: string) => void
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -28,27 +30,62 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   onAnswer,
   onMarkSolved,
   onMarkIncorrect,
-  onViewDetails
+  onViewDetails,
+  onEdit
 }) => {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Fallback значения для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
+
   const getQuestionTypeLabel = (type: Question['type_question']) => {
+    if (!mounted || !ready) {
+      const fallbackLabels: Record<Question['type_question'], string> = {
+        math1: 'Математика 1',
+        math2: 'Математика 2',
+        analogy: 'Аналогия',
+        rac: 'РАЦ',
+        grammar: 'Грамматика',
+        standard: 'Стандартный',
+      }
+      return fallbackLabels[type] || type
+    }
     const labels: Record<Question['type_question'], string> = {
-      math1: 'Математика 1',
-      math2: 'Математика 2',
-      analogy: 'Аналогия',
-      rac: 'РАЦ',
-      grammar: 'Грамматика',
-      standard: 'Стандартный',
+      math1: t('questions.questionTypes.math1'),
+      math2: t('questions.questionTypes.math2'),
+      analogy: t('questions.questionTypes.analogy'),
+      rac: t('questions.questionTypes.rac'),
+      grammar: t('questions.questionTypes.grammar'),
+      standard: t('questions.questionTypes.standard'),
     }
     return labels[type] || type
   }
 
   const getSourceLabel = (source: Question['type_from']) => {
+    if (!mounted || !ready) {
+      const fallbackLabels: Record<Question['type_from'], string> = {
+        from_lesson: 'Из урока',
+        from_teacher: 'От преподавателя',
+        from_trial: 'Из пробного теста',
+        from_student: 'От ученика',
+        from_mentor: 'От ментора',
+      }
+      return fallbackLabels[source] || source
+    }
     const labels: Record<Question['type_from'], string> = {
-      from_lesson: 'Из урока',
-      from_teacher: 'От преподавателя',
-      from_trial: 'Из пробного теста',
-      from_student: 'От ученика',
-      from_mentor: 'От ментора',
+      from_lesson: t('questions.sources.from_lesson'),
+      from_teacher: t('questions.sources.from_teacher'),
+      from_trial: t('questions.sources.from_trial'),
+      from_student: t('questions.sources.from_student'),
+      from_mentor: t('questions.sources.from_mentor'),
     }
     return labels[source] || source
   }
@@ -61,7 +98,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           <div className="flex items-center gap-3 mb-3 flex-wrap">
             {question.hasComplaint && (
               <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 flex-shrink-0">
-                ⚠️ Проблемный
+                ⚠️ {getText('questions.tooltips.problematic', 'Проблемный')}
               </span>
             )}
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 flex-shrink-0">
@@ -71,7 +108,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               {getSourceLabel(question.type_from)}
             </span>
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 flex-shrink-0">
-              {question.language === 'ru' ? 'Русский' : 'Кыргызский'}
+              {question.language === 'ru' 
+                ? getText('questions.languages.ru', 'Русский')
+                : getText('questions.languages.kg', 'Кыргызский')
+              }
             </span>
           </div>
           
@@ -89,7 +129,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </span>
             {question.averageCorrect !== undefined && (
               <span>
-                Средний % правильных: <span className="text-white font-medium">{question.averageCorrect.toFixed(1)}%</span>
+                {getText('questions.averageCorrect', 'Средний % правильных')}: <span className="text-white font-medium">{question.averageCorrect.toFixed(1)}%</span>
               </span>
             )}
           </div>
@@ -97,7 +137,17 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
         {/* Правая часть: Действия */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Tooltip text="Детали">
+          {onEdit && (
+            <Tooltip text={getText('questions.tooltips.edit', 'Редактировать')}>
+              <button
+                onClick={() => onEdit(question.id)}
+                className="p-2 rounded-lg bg-[#242424] hover:bg-[#2a2a2a] transition-colors"
+              >
+                <Icons.Edit className="h-5 w-5 text-white" />
+              </button>
+            </Tooltip>
+          )}
+          <Tooltip text={getText('questions.tooltips.details', 'Детали')}>
             <button
               onClick={() => onViewDetails(question.id)}
               className="p-2 rounded-lg bg-[#242424] hover:bg-[#2a2a2a] transition-colors"

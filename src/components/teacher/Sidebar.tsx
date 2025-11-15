@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icons } from '@/components/ui/Icons'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface SidebarProps {
   isOpen: boolean
@@ -12,32 +13,33 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname()
+  const { t } = useTranslation()
 
   const menuItems = [
     {
       href: '/',
       icon: Icons.Home,
-      label: 'Главная',
+      label: t('sidebar.dashboard'),
     },
     {
       href: '/students',
       icon: Icons.Users,
-      label: 'Ученики',
+      label: t('sidebar.students'),
     },
     {
       href: '/questions',
       icon: Icons.HelpCircle,
-      label: 'Вопросы',
+      label: t('sidebar.questions'),
     },
     {
       href: '/discussions',
       icon: Icons.MessageCircle,
-      label: 'Обсуждения',
+      label: t('sidebar.discussions'),
     },
     {
       href: '/settings',
       icon: Icons.Settings,
-      label: 'Настройки',
+      label: t('sidebar.settings'),
     },
   ]
 
@@ -67,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0
           fixed top-0 left-0 h-full
-          lg:relative lg:h-auto
+          lg:relative lg:h-auto lg:block
         `}
       >
         <nav className="p-6 space-y-2">

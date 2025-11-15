@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TeacherLayout from '@/components/teacher/TeacherLayout'
 import StatCard from '@/components/teacher/StatCard'
 import QuestionsFilter from '@/components/teacher/QuestionsFilter'
@@ -8,6 +8,7 @@ import QuestionCard from '@/components/teacher/QuestionCard'
 import CreateQuestionModal, { QuestionFormData } from '@/components/teacher/CreateQuestionModal'
 import Button from '@/components/ui/Button'
 import { Icons } from '@/components/ui/Icons'
+import { useTranslation } from '@/hooks/useTranslation'
 
 // Моковые данные вопросов (из базы данных Questions)
 const mockQuestions = [
@@ -54,18 +55,26 @@ const mockQuestions = [
 ]
 
 export default function QuestionsPage() {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [questionType, setQuestionType] = useState('all')
   const [source, setSource] = useState('all')
   const [language, setLanguage] = useState('all')
   const [sortBy, setSortBy] = useState('created_at')
   const [search, setSearch] = useState('')
-  const [period, setPeriod] = useState('today')
+  const [period, setPeriod] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [timeFrom, setTimeFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [timeTo, setTimeTo] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
+  const [editingQuestionData, setEditingQuestionData] = useState<QuestionFormData | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Статистика
   const stats = {
@@ -84,7 +93,40 @@ export default function QuestionsPage() {
     const matchesLanguage = language === 'all' || question.language === language
     const matchesSearch = question.question.toLowerCase().includes(search.toLowerCase())
     
-    return matchesType && matchesSource && matchesLanguage && matchesSearch
+    // Фильтрация по дате и времени
+    let matchesDate = true
+    // Фильтруем только если указана хотя бы одна дата
+    if (dateFrom || dateTo) {
+      const questionDate = new Date(question.created_at)
+      
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom)
+        if (timeFrom) {
+          const [hours, minutes] = timeFrom.split(':')
+          fromDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0)
+        } else {
+          fromDate.setHours(0, 0, 0, 0)
+        }
+        if (questionDate < fromDate) {
+          matchesDate = false
+        }
+      }
+      
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        if (timeTo) {
+          const [hours, minutes] = timeTo.split(':')
+          toDate.setHours(parseInt(hours) || 23, parseInt(minutes) || 59, 59, 999)
+        } else {
+          toDate.setHours(23, 59, 59, 999)
+        }
+        if (questionDate > toDate) {
+          matchesDate = false
+        }
+      }
+    }
+    
+    return matchesType && matchesSource && matchesLanguage && matchesSearch && matchesDate
   })
 
   // Сортировка
@@ -107,7 +149,7 @@ export default function QuestionsPage() {
     setLanguage('all')
     setSortBy('created_at')
     setSearch('')
-    setPeriod('today')
+    setPeriod('')
     setDateFrom('')
     setTimeFrom('')
     setDateTo('')
@@ -130,6 +172,66 @@ export default function QuestionsPage() {
     console.log('Просмотр деталей вопроса:', questionId)
   }
 
+  const handleEdit = (questionId: string) => {
+    const question = mockQuestions.find(q => q.id === questionId)
+    if (question) {
+      // Преобразуем данные вопроса в формат формы
+      // В реальном приложении здесь будет запрос к API для получения полных данных вопроса
+      const questionData: QuestionFormData = {
+        question: question.question,
+        type_question: question.type_question,
+        type_from: question.type_from,
+        language: question.language,
+        source_id: '', // Нужно получить из API
+        points: 1, // Нужно получить из API
+        time_limit: 60, // Нужно получить из API
+        photo_url: '', // Нужно получить из API
+        explanation_ai: '', // Нужно получить из API
+        answer_variants: [
+          { value: '' }, // Нужно получить из API
+          { value: '' },
+          { value: '' },
+          { value: '' }
+        ],
+        correct_variant_index: 0 // Нужно получить из API
+      }
+      setEditingQuestionId(questionId)
+      setEditingQuestionData(questionData)
+      setIsCreateModalOpen(true)
+    }
+  }
+
+  const handleUpdateQuestion = async (data: QuestionFormData) => {
+    if (!editingQuestionId) return
+    
+    setIsCreating(true)
+    try {
+      // Здесь будет запрос к API для обновления вопроса
+      console.log('Обновление вопроса:', editingQuestionId, data)
+      
+      // В реальном приложении:
+      // await fetch(`/api/questions/${editingQuestionId}`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(data)
+      // })
+      
+      // Имитация задержки
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Обновляем локальные данные (в реальном приложении это будет через API)
+      // Здесь можно обновить mockQuestions или перезагрузить данные
+      
+      setIsCreateModalOpen(false)
+      setEditingQuestionId(null)
+      setEditingQuestionData(null)
+    } catch (error) {
+      console.error('Ошибка при обновлении вопроса:', error)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   const handleCreateQuestion = async (data: QuestionFormData) => {
     setIsCreating(true)
     try {
@@ -150,42 +252,62 @@ export default function QuestionsPage() {
     }
   }
 
+  // Fallback значения для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
+
+  // Предотвращаем ошибки гидратации, пока i18n не готов
+  if (!mounted || !ready) {
+    return (
+      <TeacherLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Вопросы</h1>
+            <p className="text-gray-400">Загрузка...</p>
+          </div>
+        </div>
+      </TeacherLayout>
+    )
+  }
+
   return (
     <TeacherLayout>
       <div className="space-y-6">
         {/* Заголовок страницы */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white mb-2">
-            Управление банком вопросов для уроков, тестов и дуэлей
+            {t('questions.title')}
           </h1>
           <Button
             variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <Icons.Plus className="h-4 w-4 mr-2" />
-            Создать вопрос
+            {t('questions.createQuestion')}
           </Button>
         </div>
 
         {/* Статистические карточки */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Всего вопросов"
+            title={t('questions.totalQuestions')}
             value={stats.total}
             icon={Icons.HelpCircle}
           />
           <StatCard
-            title="Активные"
+            title={t('questions.activeQuestions')}
             value={stats.active}
             icon={Icons.CheckCircle}
           />
           <StatCard
-            title="Проблемные"
+            title={t('questions.problematicQuestions')}
             value={stats.problematic}
             icon={Icons.Flag}
           />
           <StatCard
-            title="Средний % правильных"
+            title={t('questions.averageCorrect')}
             value={`${stats.averageCorrect}%`}
             icon={Icons.TrendingUp}
           />
@@ -218,7 +340,7 @@ export default function QuestionsPage() {
 
         {/* Счетчик найденных вопросов */}
         <div className="text-sm text-gray-400">
-          Найдено вопросов: {sortedQuestions.length}
+          {t('questions.foundQuestions')}: {sortedQuestions.length}
         </div>
 
         {/* Список вопросов */}
@@ -227,10 +349,10 @@ export default function QuestionsPage() {
             <div className="bg-[#151515] rounded-2xl p-12 text-center">
               <Icons.HelpCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">
-                Нет вопросов
+                {t('questions.noQuestions')}
               </h3>
               <p className="text-gray-400">
-                По выбранным фильтрам вопросы не найдены
+                {t('questions.noQuestionsDescription')}
               </p>
             </div>
           ) : (
@@ -242,17 +364,24 @@ export default function QuestionsPage() {
                 onMarkSolved={handleMarkSolved}
                 onMarkIncorrect={handleMarkIncorrect}
                 onViewDetails={handleViewDetails}
+                onEdit={handleEdit}
               />
             ))
           )}
         </div>
 
-        {/* Модальное окно создания вопроса */}
+        {/* Модальное окно создания/редактирования вопроса */}
         <CreateQuestionModal
           isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSubmit={handleCreateQuestion}
+          onClose={() => {
+            setIsCreateModalOpen(false)
+            setEditingQuestionId(null)
+            setEditingQuestionData(null)
+          }}
+          onSubmit={editingQuestionId ? handleUpdateQuestion : handleCreateQuestion}
           isLoading={isCreating}
+          initialData={editingQuestionData ? { ...editingQuestionData, id: editingQuestionId } : undefined}
+          mode={editingQuestionId ? 'edit' : 'create'}
         />
       </div>
     </TeacherLayout>

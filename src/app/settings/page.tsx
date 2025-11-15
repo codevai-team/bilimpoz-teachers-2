@@ -1,13 +1,16 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import TeacherLayout from '@/components/teacher/TeacherLayout'
 import Button from '@/components/ui/Button'
 import Select, { SelectOption } from '@/components/ui/Select'
 import { Icons } from '@/components/ui/Icons'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function SettingsPage() {
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const { logout } = useAuth()
@@ -28,10 +31,22 @@ export default function SettingsPage() {
     confirmPassword: '',
   })
 
-  const languageOptions: SelectOption[] = [
-    { value: 'ru', label: 'Русский' },
-    { value: 'kg', label: 'Кыргызча' },
-  ]
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
+
+  const languageOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'ru', label: t('questions.languages.ru') },
+      { value: 'kg', label: t('questions.languages.kg') },
+    ]
+  }, [t, mounted, ready])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -60,7 +75,7 @@ export default function SettingsPage() {
 
   const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('Пароли не совпадают')
+      alert(getText('settings.passwordMismatch', 'Пароли не совпадают'))
       return
     }
 
@@ -80,9 +95,22 @@ export default function SettingsPage() {
   }
 
   const handleLogout = async () => {
-    if (confirm('Вы уверены, что хотите выйти из системы?')) {
+    if (confirm(getText('auth.confirmLogout', 'Вы уверены, что хотите выйти из системы?'))) {
       await logout()
     }
+  }
+
+  if (!mounted || !ready) {
+    return (
+      <TeacherLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Настройки</h1>
+            <p className="text-gray-400">Загрузка...</p>
+          </div>
+        </div>
+      </TeacherLayout>
+    )
   }
 
   return (
@@ -92,10 +120,10 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white mb-2">
-              Настройки
+              {t('settings.title')}
             </h1>
             <p className="text-gray-400">
-              Редактирование профиля и персональных настроек
+              {t('settings.description')}
             </p>
           </div>
           
@@ -105,7 +133,7 @@ export default function SettingsPage() {
               onClick={() => setIsEditing(true)}
             >
               <Icons.Edit className="h-4 w-4 mr-2" />
-              Редактировать
+              {t('settings.edit')}
             </Button>
           ) : (
             <div className="flex items-center gap-3">
@@ -114,7 +142,7 @@ export default function SettingsPage() {
                 onClick={handleCancel}
                 disabled={isSaving}
               >
-                Отмена
+                {t('settings.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -122,7 +150,7 @@ export default function SettingsPage() {
                 isLoading={isSaving}
               >
                 <Icons.Save className="h-4 w-4 mr-2" />
-                Сохранить
+                {t('settings.save')}
               </Button>
             </div>
           )}
@@ -131,14 +159,14 @@ export default function SettingsPage() {
         {/* Основная информация */}
         <div className="bg-[#151515] rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-white mb-6">
-            Основная информация
+            {t('settings.basicInfo')}
           </h3>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Фото профиля */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-4">
-                Фото профиля
+                {t('settings.profilePhoto')}
               </label>
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 bg-[#363636] rounded-full flex items-center justify-center">
@@ -158,7 +186,7 @@ export default function SettingsPage() {
                       className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-[#242424] text-white rounded-lg hover:bg-[#363636] transition-colors"
                     >
                       <Icons.Camera className="h-4 w-4" />
-                      Изменить фото
+                      {t('settings.changePhoto')}
                     </label>
                   </div>
                 )}
@@ -168,7 +196,7 @@ export default function SettingsPage() {
             {/* Имя */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Имя *
+                {t('settings.name')} *
               </label>
               <input
                 type="text"
@@ -176,14 +204,14 @@ export default function SettingsPage() {
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 disabled={!isEditing}
                 className="w-full px-3 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565] disabled:opacity-50"
-                placeholder="Введите имя"
+                placeholder={t('settings.namePlaceholder')}
               />
             </div>
 
             {/* Язык интерфейса */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Язык интерфейса
+                {t('settings.interfaceLanguage')}
               </label>
               <Select
                 value={formData.language}
@@ -198,14 +226,14 @@ export default function SettingsPage() {
         {/* Социальные сети */}
         <div className="bg-[#151515] rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-white mb-6">
-            Социальные сети
+            {t('settings.socialNetworks')}
           </h3>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Telegram */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Telegram
+                {t('settings.telegram')}
               </label>
               <div className="relative">
                 <Icons.MessageCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -215,7 +243,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, telegramLogin: e.target.value }))}
                   disabled={!isEditing}
                   className="w-full pl-10 pr-4 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565] disabled:opacity-50"
-                  placeholder="@username"
+                  placeholder={t('settings.telegramPlaceholder')}
                 />
               </div>
             </div>
@@ -223,7 +251,7 @@ export default function SettingsPage() {
             {/* Instagram */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Instagram
+                {t('settings.instagram')}
               </label>
               <div className="relative">
                 <Icons.Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -233,7 +261,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, instagramLogin: e.target.value }))}
                   disabled={!isEditing}
                   className="w-full pl-10 pr-4 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565] disabled:opacity-50"
-                  placeholder="username"
+                  placeholder={t('settings.instagramPlaceholder')}
                 />
               </div>
             </div>
@@ -241,7 +269,7 @@ export default function SettingsPage() {
             {/* WhatsApp */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                WhatsApp
+                {t('settings.whatsapp')}
               </label>
               <div className="relative">
                 <Icons.Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -251,7 +279,7 @@ export default function SettingsPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, whatsappLogin: e.target.value }))}
                   disabled={!isEditing}
                   className="w-full pl-10 pr-4 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565] disabled:opacity-50"
-                  placeholder="+996555123456"
+                  placeholder={t('settings.whatsappPlaceholder')}
                 />
               </div>
             </div>
@@ -261,46 +289,46 @@ export default function SettingsPage() {
         {/* Смена пароля */}
         <div className="bg-[#151515] rounded-2xl p-6">
           <h3 className="text-lg font-semibold text-white mb-6">
-            Смена пароля
+            {t('settings.changePassword')}
           </h3>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Текущий пароль
+                {t('settings.currentPassword')}
               </label>
               <input
                 type="password"
                 value={passwordData.currentPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
                 className="w-full px-3 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565]"
-                placeholder="Введите текущий пароль"
+                placeholder={t('settings.currentPasswordPlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Новый пароль
+                {t('settings.newPassword')}
               </label>
               <input
                 type="password"
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                 className="w-full px-3 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565]"
-                placeholder="Введите новый пароль"
+                placeholder={t('settings.newPasswordPlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Подтверждение пароля
+                {t('settings.confirmPassword')}
               </label>
               <input
                 type="password"
                 value={passwordData.confirmPassword}
                 onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                 className="w-full px-3 py-2 border rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 bg-[#151515] border-[#4A5565]"
-                placeholder="Повторите новый пароль"
+                placeholder={t('settings.confirmPasswordPlaceholder')}
               />
             </div>
 
@@ -312,7 +340,7 @@ export default function SettingsPage() {
                 isLoading={isSaving}
               >
                 <Icons.Key className="h-4 w-4 mr-2" />
-                Изменить пароль
+                {t('settings.changePasswordButton')}
               </Button>
             </div>
           </div>
@@ -323,10 +351,10 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Выход из системы
+                {t('settings.logout')}
               </h3>
               <p className="text-gray-400">
-                Завершить текущую сессию и выйти из аккаунта
+                {t('settings.logoutDescription')}
               </p>
             </div>
             <Button
@@ -334,7 +362,7 @@ export default function SettingsPage() {
               onClick={handleLogout}
             >
               <Icons.LogOut className="h-4 w-4 mr-2" />
-              Выйти
+              {t('settings.logoutButton')}
             </Button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import remarkGfm from 'remark-gfm'
@@ -12,12 +12,15 @@ import Input from '@/components/ui/Input'
 import Select, { SelectOption } from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import TestToolbar from '@/components/teacher/TestToolbar'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface CreateQuestionModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: QuestionFormData) => void
   isLoading?: boolean
+  initialData?: QuestionFormData & { id?: string }
+  mode?: 'create' | 'edit'
 }
 
 export interface QuestionFormData {
@@ -42,9 +45,24 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  isLoading = false
+  isLoading = false,
+  initialData,
+  mode = 'create'
 }) => {
-  const [formData, setFormData] = useState<QuestionFormData>({
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Fallback значения для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
+
+  const defaultFormData: QuestionFormData = {
     question: '',
     type_question: 'standard',
     type_from: 'from_teacher',
@@ -61,63 +79,95 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
       { value: '' }
     ],
     correct_variant_index: 0
-  })
+  }
+
+  const [formData, setFormData] = useState<QuestionFormData>(
+    initialData || defaultFormData
+  )
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [cursorPosition, setCursorPosition] = useState({ start: 0, end: 0 })
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const questionTypeOptions: SelectOption[] = [
-    { value: 'math1', label: 'Математика 1' },
-    { value: 'math2', label: 'Математика 2' },
-    { value: 'analogy', label: 'Аналогия' },
-    { value: 'rac', label: 'РАЦ' },
-    { value: 'grammar', label: 'Грамматика' },
-    { value: 'standard', label: 'Стандартный' },
-  ]
+  // Обновляем formData при изменении initialData или режима
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData && mode === 'edit') {
+        setFormData(initialData)
+      } else {
+        setFormData(defaultFormData)
+      }
+      setErrors({})
+      setIsPreviewMode(false)
+    } else {
+      // Сбрасываем данные при закрытии
+      setFormData(defaultFormData)
+      setErrors({})
+      setIsPreviewMode(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialData, mode])
 
-  const sourceOptions: SelectOption[] = [
-    { value: 'from_lesson', label: 'Из урока' },
-    { value: 'from_teacher', label: 'От преподавателя' },
-    { value: 'from_trial', label: 'Из пробного теста' },
-    { value: 'from_student', label: 'От ученика' },
-    { value: 'from_mentor', label: 'От ментора' },
-  ]
+  const questionTypeOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'math1', label: t('questions.questionTypes.math1') },
+      { value: 'math2', label: t('questions.questionTypes.math2') },
+      { value: 'analogy', label: t('questions.questionTypes.analogy') },
+      { value: 'rac', label: t('questions.questionTypes.rac') },
+      { value: 'grammar', label: t('questions.questionTypes.grammar') },
+      { value: 'standard', label: t('questions.questionTypes.standard') },
+    ]
+  }, [t, mounted, ready])
 
-  const languageOptions: SelectOption[] = [
-    { value: 'ru', label: 'Русский' },
-    { value: 'kg', label: 'Кыргызский' },
-  ]
+  const sourceOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'from_lesson', label: t('questions.sources.from_lesson') },
+      { value: 'from_teacher', label: t('questions.sources.from_teacher') },
+      { value: 'from_trial', label: t('questions.sources.from_trial') },
+      { value: 'from_student', label: t('questions.sources.from_student') },
+      { value: 'from_mentor', label: t('questions.sources.from_mentor') },
+    ]
+  }, [t, mounted, ready])
+
+  const languageOptions: SelectOption[] = useMemo(() => {
+    if (!mounted || !ready) return []
+    return [
+      { value: 'ru', label: t('questions.languages.ru') },
+      { value: 'kg', label: t('questions.languages.kg') },
+    ]
+  }, [t, mounted, ready])
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
 
     if (!formData.question.trim()) {
-      newErrors.question = 'Вопрос обязателен для заполнения'
+      newErrors.question = getText('questions.form.questionText', 'Вопрос обязателен для заполнения')
     }
 
     if (!formData.source_id.trim()) {
-      newErrors.source_id = 'ID источника обязателен'
+      newErrors.source_id = getText('questions.form.sourceId', 'ID источника обязателен')
     }
 
     const filledVariants = formData.answer_variants.filter(v => v.value.trim())
     if (filledVariants.length < 2) {
-      newErrors.answer_variants = 'Необходимо заполнить минимум 2 варианта ответа'
+      newErrors.answer_variants = getText('questions.form.answerVariants', 'Необходимо заполнить минимум 2 варианта ответа')
     }
 
     if (formData.correct_variant_index < 0 || 
         formData.correct_variant_index >= formData.answer_variants.length ||
         !formData.answer_variants[formData.correct_variant_index]?.value.trim()) {
-      newErrors.correct_variant = 'Необходимо выбрать правильный вариант ответа'
+      newErrors.correct_variant = getText('questions.form.correctAnswer', 'Необходимо выбрать правильный вариант ответа')
     }
 
     if (formData.points < 1) {
-      newErrors.points = 'Баллы должны быть больше 0'
+      newErrors.points = getText('questions.form.points', 'Баллы должны быть больше 0')
     }
 
     if (formData.time_limit < 1) {
-      newErrors.time_limit = 'Лимит времени должен быть больше 0'
+      newErrors.time_limit = getText('questions.form.timeLimit', 'Лимит времени должен быть больше 0')
     }
 
     setErrors(newErrors)
@@ -438,7 +488,12 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
       <div className="bg-[#151515] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-800">
         {/* Заголовок */}
         <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-800">
-          <h3 className="text-lg font-semibold text-white">Создать вопрос</h3>
+          <h3 className="text-lg font-semibold text-white">
+            {mode === 'edit' 
+              ? getText('questions.editQuestion', 'Редактировать вопрос')
+              : getText('questions.createQuestion', 'Создать вопрос')
+            }
+          </h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-[#242424] rounded-lg transition-colors"
@@ -452,7 +507,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           {/* Текст вопроса */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Текст вопроса <span className="text-red-400">*</span>
+              {getText('questions.form.questionText', 'Текст вопроса')} <span className="text-red-400">*</span>
             </label>
             
             {/* Toolbar для форматирования */}
@@ -515,7 +570,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                   const target = e.target as HTMLTextAreaElement
                   setCursorPosition({ start: target.selectionStart, end: target.selectionEnd })
                 }}
-                placeholder="Введите текст вопроса"
+                placeholder={getText('questions.form.questionTextPlaceholder', 'Введите текст вопроса')}
                 rows={6}
                 className="mt-4 w-full px-5 py-4 rounded-xl border border-gray-600 bg-[#0b0b0b] text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out resize-none"
               />
@@ -529,37 +584,37 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Тип вопроса <span className="text-red-400">*</span>
+                {getText('questions.form.questionType', 'Тип вопроса')} <span className="text-red-400">*</span>
               </label>
               <Select
                 value={formData.type_question}
                 onChange={(value) => setFormData({ ...formData, type_question: value as any })}
                 options={questionTypeOptions}
-                placeholder="Выберите тип"
+                placeholder={getText('questions.form.questionType', 'Выберите тип')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Источник <span className="text-red-400">*</span>
+                {getText('questions.form.source', 'Источник')} <span className="text-red-400">*</span>
               </label>
               <Select
                 value={formData.type_from}
                 onChange={(value) => setFormData({ ...formData, type_from: value as any })}
                 options={sourceOptions}
-                placeholder="Выберите источник"
+                placeholder={getText('questions.form.source', 'Выберите источник')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Язык <span className="text-red-400">*</span>
+                {getText('questions.form.language', 'Язык')} <span className="text-red-400">*</span>
               </label>
               <Select
                 value={formData.language}
                 onChange={(value) => setFormData({ ...formData, language: value as any })}
                 options={languageOptions}
-                placeholder="Выберите язык"
+                placeholder={getText('questions.form.language', 'Выберите язык')}
               />
             </div>
           </div>
@@ -568,7 +623,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                ID источника <span className="text-red-400">*</span>
+                {getText('questions.form.sourceId', 'ID источника')} <span className="text-red-400">*</span>
               </label>
               <Input
                 type="text"
@@ -579,7 +634,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                     setErrors({ ...errors, source_id: '' })
                   }
                 }}
-                placeholder="Введите ID источника"
+                placeholder={getText('questions.form.sourceIdPlaceholder', 'Введите ID источника')}
                 error={!!errors.source_id}
               />
               {errors.source_id && (
@@ -589,7 +644,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Баллы <span className="text-red-400">*</span>
+                {getText('questions.form.points', 'Баллы')} <span className="text-red-400">*</span>
               </label>
               <Input
                 type="number"
@@ -611,7 +666,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Лимит времени (сек) <span className="text-red-400">*</span>
+                {getText('questions.form.timeLimit', 'Лимит времени (сек)')} <span className="text-red-400">*</span>
               </label>
               <Input
                 type="number"
@@ -635,25 +690,25 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           {/* URL фото */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              URL фото (опционально)
+              {getText('questions.form.photoUrl', 'URL фото (опционально)')}
             </label>
             <Input
               type="url"
               value={formData.photo_url || ''}
               onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-              placeholder="https://example.com/image.jpg"
+              placeholder={getText('questions.form.photoUrlPlaceholder', 'https://example.com/image.jpg')}
             />
           </div>
 
           {/* Объяснение AI */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Объяснение от AI (опционально)
+              {getText('questions.form.aiExplanation', 'Объяснение от AI (опционально)')}
             </label>
             <textarea
               value={formData.explanation_ai || ''}
               onChange={(e) => setFormData({ ...formData, explanation_ai: e.target.value })}
-              placeholder="Введите объяснение"
+              placeholder={getText('questions.form.aiExplanationPlaceholder', 'Введите объяснение')}
               rows={3}
               className="w-full px-5 py-4 rounded-xl border border-gray-600 bg-[#0b0b0b] text-white placeholder-gray-400 focus:outline-none focus:border-white transition-all duration-300 ease-in-out resize-none"
             />
@@ -663,7 +718,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-medium text-gray-300">
-                Варианты ответов <span className="text-red-400">*</span>
+                {getText('questions.form.answerVariants', 'Варианты ответов')} <span className="text-red-400">*</span>
               </label>
               <button
                 type="button"
@@ -671,7 +726,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                 className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
               >
                 <Icons.Plus className="h-4 w-4" />
-                Добавить вариант
+                {getText('questions.form.addVariant', 'Добавить вариант')}
               </button>
             </div>
             <div className="space-y-3">
@@ -692,14 +747,17 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                         className="w-4 h-4 text-blue-600 bg-[#242424] border-gray-600 focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-400">
-                        {formData.correct_variant_index === index ? 'Правильный ответ' : 'Вариант ' + (index + 1)}
+                        {formData.correct_variant_index === index 
+                          ? getText('questions.form.correctAnswer', 'Правильный ответ')
+                          : getText('questions.form.answerVariantPlaceholder', 'Вариант') + ' ' + (index + 1)
+                        }
                       </span>
                     </div>
                     <Input
                       type="text"
                       value={variant.value}
                       onChange={(e) => handleAnswerVariantChange(index, e.target.value)}
-                      placeholder={`Вариант ответа ${index + 1}`}
+                      placeholder={getText('questions.form.answerVariantPlaceholder', 'Вариант ответа') + ' ' + (index + 1)}
                     />
                   </div>
                   {formData.answer_variants.length > 2 && (
@@ -733,14 +791,17 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
               }}
               disabled={isLoading}
             >
-              Отмена
+              {getText('common.cancel', 'Отмена')}
             </Button>
             <Button
               type="submit"
               variant="primary"
               isLoading={isLoading}
             >
-              Создать вопрос
+              {mode === 'edit' 
+                ? getText('questions.form.saveChanges', 'Сохранить изменения')
+                : getText('questions.form.createQuestion', 'Создать вопрос')
+              }
             </Button>
           </div>
         </form>

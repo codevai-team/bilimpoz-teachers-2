@@ -1,0 +1,371 @@
+{
+  "common": {
+    "loading": "Жүктөлүүдө...",
+    "save": "Сактоо",
+    "cancel": "Жокко чыгаруу",
+    "delete": "Өчүрүү",
+    "edit": "Өзгөртүү",
+    "create": "Түзүү",
+    "close": "Жабуу",
+    "clear": "Тазалоо",
+    "search": "Издөө...",
+    "filter": "Чыпка",
+    "all": "Бардыгы",
+    "yes": "Ооба",
+    "no": "Жок",
+    "apply": "Колдонуу",
+    "reset": "Баштапкы абалга келтирүү",
+    "user": "Колдонуучу",
+    "roleNotSpecified": "Ролу көрсөтүлгөн эмес"
+  },
+  "header": {
+    "title": "Bilimpoz Мугалим",
+    "logout": "Чыгуу",
+    "profile": "Профиль",
+    "settings": "Жөндөөлөр"
+  },
+  "sidebar": {
+    "dashboard": "Башкы бет",
+    "students": "Окуучулар",
+    "questions": "Суроолор",
+    "discussions": "Талкуулар",
+    "referrals": "Рефералдар",
+    "settings": "Жөндөөлөр"
+  },
+  "dashboard": {
+    "title": "Башкы бет",
+    "description": "Окуу процессин башкаруу жана активдүүлүктү талдоо",
+    "stats": {
+      "total": "Жалпы",
+      "active": "Активдүү",
+      "new": "Жаңы",
+      "blocked": "Бөгөттөлгөн",
+      "conductedLessons": "Өткөрүлгөн сабактар",
+      "newQuestions": "Жаңы суроолор",
+      "totalPoints": "Упайлар",
+      "monthGrowth": "Айдык өсүү"
+    },
+    "period": "Мезгил",
+    "configure": "Жөндөө",
+    "today": "Бүгүн",
+    "yesterday": "Кечээ",
+    "week": "Жума",
+    "month": "Ай",
+    "fromDate": "Башталган күн",
+    "toDate": "Аяктаган күн",
+    "timeFrom": "Башталган убакыт",
+    "timeTo": "Аяктаган убакыт",
+    "activityChart": "Активдүүлүк графиги",
+    "last7Days": "Акыркы 7 күндө",
+    "chartLoading": "Маалыматтар жүктөлүүдө...",
+    "quickActions": "Тез аракеттер",
+    "newQuestionsAction": "Жаңы суроолор",
+    "newQuestionsActionDesc": "Окуучулардын суроолоруна жооп берүү",
+    "discussionsAction": "Талкуулар",
+    "discussionsActionDesc": "Активдүү чаттарды текшерүү",
+    "studentsAction": "Окуучулар",
+    "studentsActionDesc": "Окуучуларды башкаруу жана реферал системасы"
+  },
+  "discussions": {
+    "title": "Талкуулар",
+    "description": "Сабактардын алкагында окуучулар менен баарлашуу",
+    "stats": {
+      "total": "Жалпы талкуулар",
+      "active": "Активдүү",
+      "closed": "Жабылган",
+      "unread": "Окулбаган"
+    },
+    "filters": {
+      "title": "Чыпкалар",
+      "all": "Бардыгы",
+      "active": "Активдүү",
+      "closed": "Жабылган",
+      "withUnread": "Окулбагандар менен"
+    },
+    "empty": {
+      "title": "Талкуулар жок",
+      "description": "Азырынча окуучулар менен активдүү талкуулар жок"
+    },
+    "card": {
+      "active": "Активдүү",
+      "closed": "Жабылган",
+      "student": "Окуучу:",
+      "messages": "билдирүүлөр",
+      "lastMessage": "Акыркы билдирүү",
+      "openChat": "Чатты ачуу",
+      "summarize": "Жыйынтыктоо",
+      "close": "Жабуу",
+      "justNow": "Азыр эле",
+      "hoursAgo": "саат мурун"
+    },
+    "chat": {
+      "chatWith": "Чат",
+      "noMessages": "Азырынча билдирүүлөр жок",
+      "enterMessage": "Билдирүү киргизиңиз...",
+      "sendHint": "Жөнөтүү үчүн Enter басыңыз, жаңы сап үчүн Shift+Enter"
+    }
+  },
+  "students": {
+    "title": "Окуучулар",
+    "description": "Окуучуларды башкаруу жана реферал системасы аркылуу жаңыларды чакыруу",
+    "stats": {
+      "total": "Жалпы окуучулар",
+      "active": "Активдүү",
+      "inactive": "Активдүү эмес",
+      "banned": "Бөгөттөлгөн"
+    },
+    "filters": {
+      "title": "Чыпкалар",
+      "clear": "Тазалоо",
+      "searchPlaceholder": "Аты боюнча издөө...",
+      "statusPlaceholder": "Статусту тандаңыз",
+      "sortPlaceholder": "Иреттөө",
+      "statusOptions": {
+        "all": "Бардык статустар",
+        "active": "Активдүү",
+        "inactive": "Активдүү эмес",
+        "banned": "Бөгөттөлгөн"
+      },
+      "sortOptions": {
+        "name": "Аты боюнча",
+        "registration_date": "Катталган күнү боюнча",
+        "activity": "Активдүүлүк боюнча",
+        "lessons": "Сабактар боюнча",
+        "points": "Упайлар боюнча"
+      }
+    },
+    "empty": {
+      "title": "Окуучулар жок",
+      "noResults": "Тандалган чыпкалар боюнча окуучулар табылган жок",
+      "noStudents": "Азырынча окуучулар жок. Биринчи окуучуну чакырыңыз!",
+      "inviteButton": "Окуучуну чакыруу"
+    },
+    "pagination": {
+      "showing": "Көрсөтүлдү",
+      "of": "дан",
+      "previous": "Мурунку",
+      "next": "Кийинки"
+    },
+    "card": {
+      "status": {
+        "active": "Активдүү",
+        "inactive": "Активдүү эмес",
+        "banned": "Бөгөттөлгөн",
+        "unknown": "Белгисиз"
+      },
+      "registration": "Каттоо:",
+      "activity7Days": "Активдүүлүк (7 күн)",
+      "lessons": "Сабактар",
+      "completedLessons": "Өткөрүлгөн сабактар",
+      "points": "Упайлар",
+      "growth": "Өсүү",
+      "growthWeek": "Жумалык өсүү",
+      "details": "Чоо-жайы"
+    },
+    "confirmations": {
+      "blockStudent": "Бул окуучуну бөгөттөөнү каалайсызбы?",
+      "deleteStudent": "Бул окуучуну өчүрүүнү каалайсызбы? Бул аракетти кайтарып алуу мүмкүн эмес."
+    },
+    "referral": {
+      "title": "Реферал системасы",
+      "description": "Жаңы окуучуларды чакырып, бонус алыңыз",
+      "inviteButton": "Окуучуну чакыруу",
+      "clicks": "Чертүүлөр",
+      "registrations": "Каттоолор",
+      "linkTitle": "Сиздин реферал шилтемеңиз",
+      "shareHint": "Окуучулар менен бөлүшүңүз",
+      "copied": "Көчүрүлдү",
+      "copy": "Көчүрүү",
+      "inviteMethods": "Чакыруу ыкмалары",
+      "telegram": "Telegram",
+      "telegramHint": "Чатка жөнөтүү",
+      "whatsapp": "WhatsApp",
+      "whatsappHint": "Шилтемени бөлүшүү",
+      "other": "Башкалар",
+      "otherHint": "Социалдык тармактар",
+      "copyError": "Көчүрүү катасы:"
+    }
+  },
+  "questions": {
+    "title": "Суроолор",
+    "description": "Суроолор банкын башкаруу",
+    "createQuestion": "Суроо түзүү",
+    "editQuestion": "Суроону өзгөртүү",
+    "totalQuestions": "Жалпы суроолор",
+    "activeQuestions": "Активдүү",
+    "problematicQuestions": "Көйгөйлүү",
+    "averageCorrect": "Орточо % туура",
+    "questionType": "Суроонун түрү",
+    "source": "Булак",
+    "language": "Тил",
+    "sortBy": "Иреттөө",
+    "period": "Мезгил",
+    "fromDate": "Башталган күн",
+    "toDate": "Аяктаган күн",
+    "clearFilters": "Чыпкаларды тазалоо",
+    "foundQuestions": "Табылган суроолор",
+    "noQuestions": "Суроолор жок",
+    "noQuestionsDescription": "Тандалган чыпкалар боюнча суроолор табылган жок",
+    "questionTypes": {
+      "all": "Бардык суроо түрлөрү",
+      "math1": "Математика 1",
+      "math2": "Математика 2",
+      "analogy": "Аналогия",
+      "rac": "РАЦ",
+      "grammar": "Грамматика",
+      "standard": "Стандарттык"
+    },
+    "sources": {
+      "all": "Бардык булактар",
+      "from_lesson": "Сабактан",
+      "from_teacher": "Мугалимден",
+      "from_trial": "Сыноо тестинен",
+      "from_student": "Окуучудан",
+      "from_mentor": "Ментордон"
+    },
+    "languages": {
+      "all": "Бардык тилдер",
+      "ru": "Орус тили",
+      "kg": "Кыргыз тили"
+    },
+    "sortOptions": {
+      "created_at": "Түзүлгөн күнү боюнча",
+      "updated_at": "Жаңыланган күнү боюнча",
+      "question": "Суроо тексти боюнча"
+    },
+    "form": {
+      "questionText": "Суроонун тексти",
+      "questionTextPlaceholder": "Суроонун текстин киргизиңиз",
+      "questionType": "Суроонун түрү",
+      "source": "Булак",
+      "language": "Тил",
+      "sourceId": "Булактын ID",
+      "sourceIdPlaceholder": "Булактын ID киргизиңиз",
+      "points": "Упайлар",
+      "timeLimit": "Убакыт чеги (сек)",
+      "photoUrl": "Сүрөттүн URL",
+      "photoUrlPlaceholder": "Сүрөттүн URL киргизиңиз (милдеттүү эмес)",
+      "aiExplanation": "AI түшүндүрмө",
+      "aiExplanationPlaceholder": "AI түшүндүрмө киргизиңиз (милдеттүү эмес)",
+      "answerVariants": "Жооп варианттары",
+      "answerVariantPlaceholder": "Жооп вариантын киргизиңиз",
+      "correctAnswer": "Туура жооп",
+      "addVariant": "Вариант кошуу",
+      "removeVariant": "Вариантты өчүрүү",
+      "saveChanges": "Өзгөртүүлөрдү сактоо",
+      "createQuestion": "Суроо түзүү"
+    },
+    "tooltips": {
+      "edit": "Өзгөртүү",
+      "details": "Чоо-жайы",
+      "problematic": "Көйгөйлүү"
+    }
+  },
+  "referrals": {
+    "title": "Реферал системасы",
+    "description": "Реферал шилтемелерин жана статистиканы башкаруу",
+    "referralLink": "Реферал шилтемеси",
+    "copyLink": "Шилтемени көчүрүү",
+    "linkCopied": "Шилтеме көчүрүлдү!",
+    "totalClicks": "Жалпы чертүүлөр",
+    "registrations": "Каттоолор"
+  },
+  "settings": {
+    "title": "Жөндөөлөр",
+    "description": "Профильди жана жеке жөндөөлөрдү редакциялоо",
+    "edit": "Өзгөртүү",
+    "save": "Сактоо",
+    "cancel": "Жокко чыгаруу",
+    "basicInfo": "Негизги маалымат",
+    "profilePhoto": "Профиль сүрөтү",
+    "changePhoto": "Сүрөттү өзгөртүү",
+    "name": "Аты",
+    "namePlaceholder": "Атыңызды киргизиңиз",
+    "interfaceLanguage": "Интерфейс тили",
+    "socialNetworks": "Социалдык тармактар",
+    "telegram": "Telegram",
+    "telegramPlaceholder": "@username",
+    "instagram": "Instagram",
+    "instagramPlaceholder": "username",
+    "whatsapp": "WhatsApp",
+    "whatsappPlaceholder": "+996555123456",
+    "changePassword": "Сыр сөздү өзгөртүү",
+    "currentPassword": "Учурдагы сыр сөз",
+    "currentPasswordPlaceholder": "Учурдагы сыр сөздү киргизиңиз",
+    "newPassword": "Жаңы сыр сөз",
+    "newPasswordPlaceholder": "Жаңы сыр сөздү киргизиңиз",
+    "confirmPassword": "Сыр сөздү ырастау",
+    "confirmPasswordPlaceholder": "Жаңы сыр сөздү кайталаңыз",
+    "changePasswordButton": "Сыр сөздү өзгөртүү",
+    "passwordMismatch": "Сыр сөздөр дал келбейт",
+    "logout": "Системадан чыгуу",
+    "logoutDescription": "Учурдагы сессияны бүтүрүп, аккаунттан чыгуу",
+    "logoutButton": "Чыгуу",
+    "settingsSaved": "Жөндөөлөр сакталды",
+    "passwordChanged": "Сыр сөз өзгөртүлдү"
+  },
+  "auth": {
+    "login": "Кирүү",
+    "logout": "Чыгуу",
+    "email": "Email",
+    "password": "Сыр сөз",
+    "rememberMe": "Эстеп калуу",
+    "forgotPassword": "Сыр сөздү унуттуңузбу?",
+    "loginButton": "Кирүү",
+    "loginError": "Кирүү катасы",
+    "invalidCredentials": "Туура эмес маалыматтар",
+    "confirmLogout": "Системадан чыгууну каалайсызбы?"
+  },
+  "datePicker": {
+    "date": "Дата тандаңыз",
+    "selectDate": "Дата тандаңыз",
+    "day": "Күн",
+    "month": "Ай",
+    "year": "Жыл",
+    "today": "Бүгүн",
+    "yesterday": "Кечээ",
+    "now": "Азыр",
+    "clear": "Тазалоо",
+    "january": "Январь",
+    "february": "Февраль",
+    "march": "Март",
+    "april": "Апрель",
+    "may": "Май",
+    "june": "Июнь",
+    "july": "Июль",
+    "august": "Август",
+    "september": "Сентябрь",
+    "october": "Октябрь",
+    "november": "Ноябрь",
+    "december": "Декабрь"
+  },
+  "timePicker": {
+    "time": "Убакыт тандаңыз",
+    "selectTime": "Убакыт тандаңыз",
+    "hours": "Саат",
+    "minutes": "Мүнөт",
+    "now": "Азыр",
+    "clear": "Тазалоо"
+  },
+  "tooltips": {
+    "bold": "Калың",
+    "italic": "Курсив",
+    "strikethrough": "Сызылган",
+    "underline": "Асты сызылган",
+    "ai": "AI функциялар",
+    "imageToLatex": "Сүрөттү LaTeX кылуу",
+    "aiImproveText": "AI менен текстти жакшыртуу"
+  },
+  "testEditor": {
+    "inlineFormula": "Саптагы формула",
+    "blockFormula": "Блоктогу формула",
+    "previewMode": "Алдын ала көрүү режими",
+    "editMode": "Редакциялоо режими"
+  },
+  "roles": {
+    "teacher": "Мугалим",
+    "admin": "Администратор",
+    "student": "Окуучу",
+    "mentor": "Ментор"
+  }
+}

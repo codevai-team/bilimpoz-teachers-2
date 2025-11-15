@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { Icons } from '@/components/ui/Icons'
 
 interface StatCardProps {
   title: string
@@ -22,9 +21,9 @@ const StatCard: React.FC<StatCardProps> = ({
 
   return (
     <div
-      className={`bg-[#151515] rounded-2xl p-6 transition-all ${
+      className={`bg-[#1A1A1A] rounded-2xl p-6 transition-all ${
         isClickable 
-          ? 'hover:bg-[#1a1a1a] cursor-pointer group' 
+          ? 'hover:bg-[#1f1f1f] cursor-pointer group' 
           : ''
       } ${className}`}
       onClick={onClick}
@@ -50,4 +49,3 @@ const StatCard: React.FC<StatCardProps> = ({
 }
 
 export default StatCard
-
