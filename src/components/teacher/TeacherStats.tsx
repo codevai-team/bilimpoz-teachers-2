@@ -64,7 +64,7 @@ const TeacherStats: React.FC<TeacherStatsProps> = ({ teacherId }) => {
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 skeleton-shimmer rounded-lg"></div>
               <div className="h-4 skeleton-shimmer rounded w-3/4"></div>
-            </div>
+          </div>
             <div className="h-8 skeleton-shimmer rounded w-1/2"></div>
           </div>
         ))}

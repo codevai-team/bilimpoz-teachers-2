@@ -70,15 +70,28 @@ const defaultMessages = {
   }
 }
 
+// Глобальная блокировка для предотвращения множественных polling
+let globalPollingLock = false
+
 class TelegramPollingService {
   private pollingActive = false
   private pollingTimeout: NodeJS.Timeout | null = null
   private offset = 0
   private botToken: string | null = null
+  private static instance: TelegramPollingService | null = null
+  private startPromise: Promise<boolean> | null = null
+
+  // Singleton pattern для предотвращения множественных экземпляров
+  static getInstance(): TelegramPollingService {
+    if (!TelegramPollingService.instance) {
+      TelegramPollingService.instance = new TelegramPollingService()
+    }
+    return TelegramPollingService.instance
+  }
 
   // Геттер для проверки статуса
   get isActive() {
-    return this.pollingActive
+    return this.pollingActive && globalPollingLock
   }
 
   /**
@@ -109,12 +122,10 @@ class TelegramPollingService {
    * Запуск polling
    */
   async start(): Promise<boolean> {
-    // 1. Загрузка токена из БД
-    this.botToken = await getTeacherBotToken()
-    
-    if (!this.botToken) {
-      console.error('❌ TEACHER_BOT_TOKEN не установлен')
-      return false
+    // Предотвращение множественных запусков
+    if (this.startPromise) {
+      console.log('⚠️ Polling уже запускается, ожидаем завершения...')
+      return await this.startPromise
     }
 
     if (this.pollingActive) {
@@ -122,7 +133,33 @@ class TelegramPollingService {
       return true
     }
 
+    // Создаем промис для предотвращения параллельных запусков
+    this.startPromise = this._startInternal()
+    
     try {
+      const result = await this.startPromise
+      return result
+    } finally {
+      this.startPromise = null
+    }
+  }
+
+  private async _startInternal(): Promise<boolean> {
+    try {
+      // 0. Проверка глобальной блокировки
+      if (globalPollingLock) {
+        console.log('⚠️ Глобальная блокировка активна - другой экземпляр уже использует polling')
+        return false
+      }
+
+      // 1. Загрузка токена из БД
+      this.botToken = await getTeacherBotToken()
+      
+      if (!this.botToken) {
+        console.error('❌ TEACHER_BOT_TOKEN не установлен')
+        return false
+      }
+
       // 2. Проверка бота
       const botCheck = await this.checkBot()
       if (!botCheck) {
@@ -132,7 +169,14 @@ class TelegramPollingService {
       // 3. Удаление webhook перед запуском polling
       await this.deleteWebhook()
       
-      // 4. Запуск polling
+      // 4. Дополнительная задержка для очистки конфликтов
+      console.log('⏳ Ожидание 3 секунды для очистки конфликтов...')
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      // 5. Установка глобальной блокировки
+      globalPollingLock = true
+      
+      // 6. Запуск polling
       this.pollingActive = true
       console.log('🚀 Telegram polling запущен для бота:', botCheck.username)
       
@@ -140,6 +184,8 @@ class TelegramPollingService {
       return true
     } catch (error) {
       console.error('❌ Ошибка запуска polling:', error)
+      this.pollingActive = false
+      globalPollingLock = false
       return false
     }
   }
@@ -153,6 +199,7 @@ class TelegramPollingService {
       this.pollingTimeout = null
     }
     this.pollingActive = false
+    globalPollingLock = false
     console.log('⏹️ Telegram polling остановлен')
   }
 
@@ -182,6 +229,16 @@ class TelegramPollingService {
    */
   private async deleteWebhook() {
     try {
+      // Сначала проверяем текущий webhook
+      const infoResponse = await fetch(`https://api.telegram.org/bot${this.botToken}/getWebhookInfo`)
+      const infoResult = await infoResponse.json()
+      
+      if (infoResult.ok && infoResult.result.url) {
+        console.log('🔗 Обнаружен webhook:', infoResult.result.url)
+        console.log('📊 Pending updates:', infoResult.result.pending_update_count)
+      }
+
+      // Удаляем webhook с очисткой всех pending updates
       const response = await fetch(`https://api.telegram.org/bot${this.botToken}/deleteWebhook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,7 +247,9 @@ class TelegramPollingService {
       
       const result = await response.json()
       if (result.ok) {
-        console.log('✅ Webhook удален')
+        console.log('✅ Webhook удален и pending updates очищены')
+      } else {
+        console.warn('⚠️ Проблема при удалении webhook:', result.description)
       }
     } catch (error) {
       console.error('⚠️ Ошибка удаления webhook:', error)
@@ -213,7 +272,15 @@ class TelegramPollingService {
 
       if (!data.ok) {
         console.error('❌ Telegram API error:', data.description)
-        // Планируем следующий запрос через 3 секунды
+        
+        // Если ошибка конфликта - останавливаем polling
+        if (data.description && data.description.toLowerCase().includes('conflict')) {
+          console.log('💡 Решение: Останавливаем текущий polling. Убедитесь, что запущен только один экземпляр приложения.')
+          this.stop()
+          return
+        }
+        
+        // Планируем следующий запрос через 3 секунды для других ошибок
         if (this.pollingActive) {
           this.pollingTimeout = setTimeout(() => this.poll(), 3000)
         }
@@ -492,7 +559,7 @@ class TelegramPollingService {
     if (!sendResult.success && sendResult.isBlocked) {
       const botUsername = await getTeacherBotUsername()
       await this.sendMessage(user.id,
-        msg.botBlocked.replace('{botUsername}', botUsername),
+        msg.botBlocked.replace('{botUsername}', botUsername || 'BilimpozTeachersbot'),
         { parse_mode: 'Markdown' }
       )
       return
@@ -811,5 +878,20 @@ class TelegramPollingService {
 }
 
 // Экспорт singleton экземпляра
-export const telegramPolling = new TelegramPollingService()
+export const telegramPolling = TelegramPollingService.getInstance()
+
+// Graceful shutdown при завершении процесса
+if (typeof process !== 'undefined') {
+  const gracefulShutdown = () => {
+    console.log('🔄 Graceful shutdown: останавливаем Telegram polling...')
+    telegramPolling.stop()
+    process.exit(0)
+  }
+
+  process.on('SIGINT', gracefulShutdown)
+  process.on('SIGTERM', gracefulShutdown)
+  process.on('beforeExit', () => {
+    telegramPolling.stop()
+  })
+}
 

@@ -19,17 +19,7 @@ export async function getSetting(key: string, defaultValue?: string): Promise<st
  * Получение токена бота учителя из БД
  */
 export async function getTeacherBotToken(): Promise<string | null> {
-  // Пробуем разные варианты ключей
-  const possibleKeys = ['TEACHER_BOT_TOKEN', 'ADMIN_BOT_TOKEN', 'teacher_bot_token', 'admin_bot_token']
-  
-  for (const key of possibleKeys) {
-    const token = await getSetting(key)
-    if (token) {
-      return token
-    }
-  }
-  
-  return null
+  return await getSetting('TEACHER_BOT_TOKEN_2')
 }
 
 /**
@@ -43,9 +33,8 @@ export async function getTeacherSiteUrl(): Promise<string> {
 /**
  * Получение username бота учителя
  */
-export async function getTeacherBotUsername(): Promise<string> {
-  const username = await getSetting('TEACHER_BOT_USERNAME', 'bilimpozteacher_bot')
-  return username || 'bilimpozteacher_bot'
+export async function getTeacherBotUsername(): Promise<string | null> {
+  return await getSetting('TEACHER_BOT_USERNAME_2')
 }
 
 /**
@@ -135,5 +124,29 @@ export async function updateVerificationMessages(messages: {
     console.error('❌ Ошибка обновления сообщений верификации:', error)
     return false
   }
+}
+
+/**
+ * Получение OpenAI API ключа из БД
+ */
+export async function getOpenAIApiKey(): Promise<string | null> {
+  return await getSetting('OPENAI_API_KEY')
+}
+
+/**
+ * Получение модели OpenAI из БД
+ */
+export async function getOpenAIModel(): Promise<string> {
+  const model = await getSetting('OPENAI_API_MODELS', 'gpt-4o-mini')
+  // Если в БД хранится JSON массив, парсим его
+  try {
+    const parsed = JSON.parse(model || '')
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0] // Берем первую модель из списка
+    }
+  } catch {
+    // Если не JSON, возвращаем как есть
+  }
+  return model || 'gpt-4o-mini'
 }
 

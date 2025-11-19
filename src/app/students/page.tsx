@@ -160,15 +160,6 @@ export default function StudentsPage() {
     // Здесь можно открыть модальное окно для приглашения
   }
 
-  // Предотвращаем ошибки гидратации, пока i18n не готов
-  if (!mounted || !ready) {
-    return (
-      <TeacherLayout>
-        <StudentsPageSkeleton />
-      </TeacherLayout>
-    )
-  }
-
   return (
     <TeacherLayout>
       <div className="space-y-6">

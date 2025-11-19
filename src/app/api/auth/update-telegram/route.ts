@@ -87,8 +87,7 @@ export async function POST(request: NextRequest) {
       token = generateToken({
         userId: updatedUser.id,
         login: updatedUser.login,
-        role: updatedUser.role,
-        telegramId: updatedUser.telegram_id
+        role: updatedUser.role
       })
     }
 

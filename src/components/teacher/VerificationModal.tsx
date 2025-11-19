@@ -56,14 +56,14 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ isOpen, onClose, 
 
         {/* Buttons */}
         <div className="space-y-3">
-          {/* Call to Action Button */}
-          <button
-            onClick={onGoToChat}
-            className="w-full bg-[var(--bg-active-button)] text-[var(--text-active-button)] py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-          >
-            <Icons.MessageCircle className="w-5 h-5" />
-            <span>{getText('verification.modal.goToChat', 'Перейти в чат')}</span>
-          </button>
+        {/* Call to Action Button */}
+        <button
+          onClick={onGoToChat}
+          className="w-full bg-[var(--bg-active-button)] text-[var(--text-active-button)] py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <Icons.MessageCircle className="w-5 h-5" />
+          <span>{getText('verification.modal.goToChat', 'Перейти в чат')}</span>
+        </button>
 
           {/* Logout Button */}
           <button

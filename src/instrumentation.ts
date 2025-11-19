@@ -9,23 +9,11 @@ export async function register() {
       // Проверяем наличие токена бота в БД
       const botToken = await getTeacherBotToken()
       if (botToken) {
-        console.log('🔧 Инициализация Telegram polling...')
-        
-        // Запускаем polling с задержкой для загрузки модулей
-        setTimeout(async () => {
-          try {
-            const started = await telegramPolling.start()
-            if (started) {
-              console.log('✅ Telegram polling успешно запущен')
-            } else {
-              console.warn('⚠️ Не удалось запустить Telegram polling')
-            }
-          } catch (error) {
-            console.error('❌ Ошибка при запуске Telegram polling:', error)
-          }
-        }, 1000)
+        console.log('🔧 Telegram bot token найден')
+        console.log('💡 Для запуска polling используйте: POST /api/telegram/polling-control с action: "start"')
+        console.log('💡 Для остановки polling используйте: POST /api/telegram/polling-control с action: "stop"')
       } else {
-        console.warn('⚠️ TEACHER_BOT_TOKEN не установлен в БД, polling не будет запущен')
+        console.warn('⚠️ TEACHER_BOT_TOKEN не установлен в БД')
       }
     } catch (error) {
       console.error('❌ Ошибка при загрузке Telegram polling:', error)

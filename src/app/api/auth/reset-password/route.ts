@@ -87,8 +87,7 @@ export async function POST(request: NextRequest) {
     const token = generateToken({
       userId: user.id,
       login: user.login,
-      role: user.role,
-      telegramId: user.telegram_id
+      role: user.role
     })
 
     // Установить httpOnly cookie

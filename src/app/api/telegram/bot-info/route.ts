@@ -16,9 +16,22 @@ export async function GET() {
     const botInfoResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`)
     const botInfo = await botInfoResponse.json()
 
-    // Получаем последние обновления
-    const updatesResponse = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?limit=5`)
-    const updates = await updatesResponse.json()
+    // Получаем последние обновления (только если polling не активен)
+    let updates: any = { ok: true, result: [] }
+    try {
+      // Проверяем статус polling
+      const { telegramPolling } = await import('@/lib/telegram-polling')
+      if (!telegramPolling.isActive) {
+        const updatesResponse = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?limit=5&timeout=1`)
+        updates = await updatesResponse.json()
+      } else {
+        // Если polling активен, не делаем запрос getUpdates
+        updates = { ok: true, result: [], message: 'Polling активен - обновления недоступны' }
+      }
+    } catch (error) {
+      console.warn('Не удалось проверить статус polling:', error)
+      updates = { ok: false, result: [], error: 'Не удалось получить обновления' }
+    }
 
     // Проверяем webhook
     const webhookResponse = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`)

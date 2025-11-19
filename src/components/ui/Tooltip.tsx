@@ -40,10 +40,10 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
         <div
           ref={tooltipRef}
           className={`
-            absolute z-[9999] px-3 py-2 rounded-md
-            bg-[#151515] border border-[#404040]
-            shadow-[0_2px_8px_rgba(0,0,0,0.3)]
-            text-white text-xs whitespace-nowrap
+            absolute z-[9999] px-3 py-2 rounded-lg
+            bg-[var(--bg-card)] border border-[var(--border-primary)]
+            shadow-xl
+            text-[var(--text-primary)] text-xs whitespace-nowrap
             ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'}
             left-1/2 transform -translate-x-1/2
           `}
@@ -55,13 +55,15 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
               absolute left-1/2 transform -translate-x-1/2
               w-0 h-0 border-4 border-transparent
               ${position === 'top' 
-                ? 'top-full border-t-[#151515]' 
-                : 'bottom-full border-b-[#151515]'
+                ? 'top-full' 
+                : 'bottom-full'
               }
             `}
             style={{
-              borderTopColor: position === 'top' ? '#151515' : 'transparent',
-              borderBottomColor: position === 'bottom' ? '#151515' : 'transparent',
+              borderTopColor: position === 'top' ? 'var(--bg-card)' : 'transparent',
+              borderBottomColor: position === 'bottom' ? 'var(--bg-card)' : 'transparent',
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
             }}
           />
         </div>

@@ -311,14 +311,14 @@ const QuestionsFilter: React.FC<QuestionsFilterProps> = ({
 
       {/* Кнопка очистки фильтров - показывается только при наличии активных фильтров */}
       {hasActiveFilters && (
-        <div className="flex justify-end">
-          <button
-            onClick={onClearFilters}
-            className="px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            {getText('questions.clearFilters', 'Очистить фильтры')}
-          </button>
-        </div>
+      <div className="flex justify-end">
+        <button
+          onClick={onClearFilters}
+          className="px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+        >
+          {getText('questions.clearFilters', 'Очистить фильтры')}
+        </button>
+      </div>
       )}
     </div>
   )

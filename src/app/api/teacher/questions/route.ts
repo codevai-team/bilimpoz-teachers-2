@@ -51,18 +51,18 @@ export async function GET(request: NextRequest) {
     const questionIds = questions.map(q => q.id)
     const complaints = await prisma.complaints.findMany({
       where: {
-        question_id: {
+        source_id: {
           in: questionIds
         },
         type: 'teacher_question',
         status: 'created'
       },
       select: {
-        question_id: true
+        source_id: true
       }
     })
 
-    const complaintQuestionIds = new Set(complaints.map(c => c.question_id))
+    const complaintQuestionIds = new Set(complaints.map(c => c.source_id))
 
     // Получаем статистику правильных ответов
     const passedQuestions = await prisma.passed_questions.findMany({

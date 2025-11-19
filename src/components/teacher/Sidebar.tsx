@@ -13,33 +13,45 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname()
-  const { t } = useTranslation()
+  const { t, ready } = useTranslation()
+
+  // Функция для получения перевода с fallback
+  const getLabel = (key: string, fallback: string) => {
+    if (!ready) return fallback
+    const translation = t(key)
+    return translation === key ? fallback : translation
+  }
 
   const menuItems = [
     {
       href: '/',
       icon: Icons.Home,
-      label: t('sidebar.dashboard'),
+      label: getLabel('sidebar.dashboard', 'Главная'),
     },
     {
       href: '/students',
       icon: Icons.Users,
-      label: t('sidebar.students'),
+      label: getLabel('sidebar.students', 'Ученики'),
+    },
+    {
+      href: '/tests',
+      icon: Icons.FileText,
+      label: getLabel('sidebar.tests', 'Тесты'),
     },
     {
       href: '/questions',
       icon: Icons.HelpCircle,
-      label: t('sidebar.questions'),
+      label: getLabel('sidebar.questions', 'Вопросы'),
     },
     {
       href: '/discussions',
       icon: Icons.MessageCircle,
-      label: t('sidebar.discussions'),
+      label: getLabel('sidebar.discussions', 'Обсуждения'),
     },
     {
       href: '/settings',
       icon: Icons.Settings,
-      label: t('sidebar.settings'),
+      label: getLabel('sidebar.settings', 'Настройки'),
     },
   ]
 

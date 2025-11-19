@@ -13,6 +13,7 @@ import Select, { SelectOption } from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import TestToolbar from '@/components/teacher/TestToolbar'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useAI } from '@/hooks/useAI'
 
 interface CreateQuestionModalProps {
   isOpen: boolean
@@ -89,6 +90,10 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [cursorPosition, setCursorPosition] = useState({ start: 0, end: 0 })
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageToLatexInputRef = useRef<HTMLInputElement>(null)
+  const { improveText, convertImageToLatex, isLoading: aiLoading } = useAI()
 
   // Обновляем formData при изменении initialData или режима
   useEffect(() => {
@@ -147,10 +152,6 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
       newErrors.question = getText('questions.form.questionText', 'Вопрос обязателен для заполнения')
     }
 
-    if (!formData.source_id.trim()) {
-      newErrors.source_id = getText('questions.form.sourceId', 'ID источника обязателен')
-    }
-
     const filledVariants = formData.answer_variants.filter(v => v.value.trim())
     if (filledVariants.length < 2) {
       newErrors.answer_variants = getText('questions.form.answerVariants', 'Необходимо заполнить минимум 2 варианта ответа')
@@ -177,7 +178,12 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validate()) {
-      onSubmit(formData)
+      // type_from всегда должен быть 'from_teacher' для вопросов, созданных преподавателем
+      onSubmit({
+        ...formData,
+        type_from: 'from_teacher',
+        source_id: '' // source_id будет установлен на сервере из текущего пользователя
+      })
     }
   }
 
@@ -207,6 +213,55 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           ? newVariants.length - 1 
           : formData.correct_variant_index
       })
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Проверка типа файла
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setErrors({ ...errors, photo_url: getText('questions.form.invalidImageType', 'Неподдерживаемый тип файла') })
+      return
+    }
+
+    // Проверка размера (5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setErrors({ ...errors, photo_url: getText('questions.form.imageTooLarge', 'Размер файла превышает 5MB') })
+      return
+    }
+
+    setIsUploadingImage(true)
+    setErrors({ ...errors, photo_url: '' })
+
+    try {
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: uploadFormData
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.url) {
+        setFormData(prev => ({ ...prev, photo_url: result.url }))
+      } else {
+        setErrors({ ...errors, photo_url: result.error || getText('questions.form.uploadError', 'Ошибка загрузки изображения') })
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки изображения:', error)
+      setErrors({ ...errors, photo_url: getText('questions.form.uploadError', 'Ошибка загрузки изображения') })
+    } finally {
+      setIsUploadingImage(false)
+      // Очищаем input для возможности повторной загрузки того же файла
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -404,12 +459,63 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   }
 
   const handleImageToLatex = () => {
-    // TODO: Реализовать конвертацию изображения в LaTeX
-    console.log('Конвертация изображения в LaTeX')
+    // Открываем диалог выбора файла
+    imageToLatexInputRef.current?.click()
   }
 
-  const handleMagicWand = () => {
-    // Переводит выделенный текст в LaTeX формулу
+  const handleImageToLatexFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Проверка типа файла
+    if (!file.type.startsWith('image/')) {
+      alert(getText('questions.form.invalidImageType', 'Выберите изображение'))
+      return
+    }
+    
+    // Проверка размера (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert(getText('questions.form.imageTooLarge', 'Размер файла превышает 5MB'))
+      return
+    }
+
+    const textarea = questionTextareaRef.current
+    if (!textarea) return
+
+    try {
+      // Конвертируем изображение в LaTeX
+      const latexCode = await convertImageToLatex(file)
+      
+      // Вставляем LaTeX код в позицию курсора
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      
+      const newText = 
+        formData.question.substring(0, start) + 
+        latexCode + 
+        formData.question.substring(end)
+      
+      setFormData({ ...formData, question: newText })
+      
+      // Восстанавливаем фокус и позицию курсора
+      setTimeout(() => {
+        textarea.focus()
+        const newPosition = start + latexCode.length
+        textarea.setSelectionRange(newPosition, newPosition)
+      }, 0)
+    } catch (error) {
+      console.error('Ошибка конвертации изображения:', error)
+      alert(getText('questions.form.imageConversionError', 'Ошибка при конвертации изображения'))
+    } finally {
+      // Очищаем input для возможности повторной загрузки того же файла
+      if (imageToLatexInputRef.current) {
+        imageToLatexInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleMagicWand = async () => {
+    // Улучшает выделенный текст с помощью AI
     const textarea = questionTextareaRef.current
     if (!textarea) return
 
@@ -419,45 +525,21 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
 
     if (!selectedText) {
       // Если ничего не выделено, показываем подсказку
-      alert('Выделите текст, который нужно перевести в LaTeX формулу')
+      alert(getText('testEditor.errors.selectTextToImprove', 'Выделите текст, который нужно улучшить'))
       return
     }
 
-    // Простой перевод текста в LaTeX
-    // Можно улучшить с помощью AI API
-    let latexText = selectedText
-    
-    // Базовые преобразования
-    latexText = latexText
-      .replace(/\^(\d+)/g, '^{$1}') // x^2 -> x^{2}
-      .replace(/\^([a-zA-Z])/g, '^{$1}') // x^a -> x^{a}
-      .replace(/\/([a-zA-Z0-9]+)/g, '\\frac{1}{$1}') // /x -> \frac{1}{x}
-      .replace(/\*([a-zA-Z0-9]+)/g, ' \\cdot $1') // *x -> \cdot x
-      .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}') // sqrt(x) -> \sqrt{x}
-      .replace(/sin\(/g, '\\sin(')
-      .replace(/cos\(/g, '\\cos(')
-      .replace(/tan\(/g, '\\tan(')
-      .replace(/log\(/g, '\\log(')
-      .replace(/ln\(/g, '\\ln(')
-      .replace(/pi/g, '\\pi')
-      .replace(/infinity|∞/g, '\\infty')
-      .replace(/alpha/g, '\\alpha')
-      .replace(/beta/g, '\\beta')
-      .replace(/gamma/g, '\\gamma')
-      .replace(/delta/g, '\\delta')
-      .replace(/theta/g, '\\theta')
-      .replace(/lambda/g, '\\lambda')
-      .replace(/mu/g, '\\mu')
-      .replace(/sigma/g, '\\sigma')
-      .replace(/phi/g, '\\phi')
-      .replace(/omega/g, '\\omega')
+    try {
+      // Получаем язык курса из formData
+      const courseLanguage = formData.language === 'kg' ? 'kg' : 'ru'
+      
+      // Вызываем AI для улучшения текста
+      const improvedText = await improveText(selectedText, courseLanguage)
 
-    // Обертываем в формулу
-    const formattedText = `$$${latexText}$$`
-
+      // Заменяем выделенный текст на улучшенный
     const newText = 
       formData.question.substring(0, start) + 
-      formattedText + 
+        improvedText + 
       formData.question.substring(end)
     
     setFormData({ ...formData, question: newText })
@@ -465,9 +547,13 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
     // Восстанавливаем фокус и позицию курсора
     setTimeout(() => {
       textarea.focus()
-      const newPosition = start + formattedText.length
+        const newPosition = start + improvedText.length
       textarea.setSelectionRange(newPosition, newPosition)
     }, 0)
+    } catch (error) {
+      console.error('Ошибка улучшения текста:', error)
+      alert(getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста'))
+    }
   }
 
   const handleTogglePreview = () => {
@@ -518,6 +604,16 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
               onMagicWand={handleMagicWand}
               onTogglePreview={handleTogglePreview}
               activeFormats={getActiveFormats(formData.question, cursorPosition.start, cursorPosition.end)}
+            />
+            
+            {/* Скрытый input для выбора изображения для конвертации в LaTeX */}
+            <input
+              ref={imageToLatexInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              onChange={handleImageToLatexFileSelect}
+              className="hidden"
+              disabled={aiLoading}
             />
             
             {/* Поле ввода или превью */}
@@ -580,8 +676,8 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
             )}
           </div>
 
-          {/* Тип вопроса, Источник, Язык */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Тип вопроса, Язык */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 {getText('questions.form.questionType', 'Тип вопроса')} <span className="text-red-400">*</span>
@@ -591,18 +687,6 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                 onChange={(value) => setFormData({ ...formData, type_question: value as any })}
                 options={questionTypeOptions}
                 placeholder={getText('questions.form.questionType', 'Выберите тип')}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                {getText('questions.form.source', 'Источник')} <span className="text-red-400">*</span>
-              </label>
-              <Select
-                value={formData.type_from}
-                onChange={(value) => setFormData({ ...formData, type_from: value as any })}
-                options={sourceOptions}
-                placeholder={getText('questions.form.source', 'Выберите источник')}
               />
             </div>
 
@@ -619,29 +703,8 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
             </div>
           </div>
 
-          {/* ID источника, Баллы, Лимит времени */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                {getText('questions.form.sourceId', 'ID источника')} <span className="text-red-400">*</span>
-              </label>
-              <Input
-                type="text"
-                value={formData.source_id}
-                onChange={(e) => {
-                  setFormData({ ...formData, source_id: e.target.value })
-                  if (errors.source_id) {
-                    setErrors({ ...errors, source_id: '' })
-                  }
-                }}
-                placeholder={getText('questions.form.sourceIdPlaceholder', 'Введите ID источника')}
-                error={!!errors.source_id}
-              />
-              {errors.source_id && (
-                <p className="text-sm text-red-400 mt-1">{errors.source_id}</p>
-              )}
-            </div>
-
+          {/* Баллы, Лимит времени */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 {getText('questions.form.points', 'Баллы')} <span className="text-red-400">*</span>
@@ -687,17 +750,84 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
             </div>
           </div>
 
-          {/* URL фото */}
+          {/* Загрузка изображения */}
           <div>
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-              {getText('questions.form.photoUrl', 'URL фото (опционально)')}
+              {getText('questions.form.image', 'Изображение (опционально)')}
             </label>
-            <Input
-              type="url"
-              value={formData.photo_url || ''}
-              onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-              placeholder={getText('questions.form.photoUrlPlaceholder', 'https://example.com/image.jpg')}
-            />
+            <div className="space-y-3">
+              {/* Поле загрузки файла */}
+              <div className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={isUploadingImage}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="px-4 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploadingImage ? (
+                    <>
+                      <Icons.Loader2 className="h-4 w-4 animate-spin" />
+                      {getText('questions.form.uploading', 'Загрузка...')}
+                    </>
+                  ) : (
+                    <>
+                      <Icons.Upload className="h-4 w-4" />
+                      {getText('questions.form.uploadImage', 'Загрузить изображение')}
+                    </>
+                  )}
+                </button>
+                {formData.photo_url && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, photo_url: '' })}
+                    className="px-3 py-2 text-red-400 hover:text-red-300 text-sm"
+                  >
+                    {getText('questions.form.removeImage', 'Удалить')}
+                  </button>
+                )}
+              </div>
+              
+              {/* Превью изображения */}
+              {formData.photo_url && (
+                <div className="relative">
+                  <img
+                    src={formData.photo_url}
+                    alt="Preview"
+                    className="max-w-full h-auto max-h-64 rounded-lg border border-[var(--border-primary)]"
+                  />
+                </div>
+              )}
+              
+              {/* Поле для ручного ввода URL (опционально) */}
+              <div>
+                <label className="block text-xs text-[var(--text-tertiary)] mb-1">
+                  {getText('questions.form.orEnterUrl', 'Или введите URL вручную')}
+                </label>
+                <Input
+                  type="url"
+                  value={formData.photo_url || ''}
+                  onChange={(e) => {
+                    setFormData({ ...formData, photo_url: e.target.value })
+                    if (errors.photo_url) {
+                      setErrors({ ...errors, photo_url: '' })
+                    }
+                  }}
+                  placeholder={getText('questions.form.photoUrlPlaceholder', 'https://example.com/image.jpg')}
+                  error={!!errors.photo_url}
+                />
+                {errors.photo_url && (
+                  <p className="text-sm text-red-400 mt-1">{errors.photo_url}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Объяснение AI */}

@@ -295,15 +295,6 @@ export default function QuestionsPage() {
     return t(key)
   }
 
-  // Предотвращаем ошибки гидратации, пока i18n не готов
-  if (!mounted || !ready) {
-    return (
-      <TeacherLayout>
-        <QuestionsPageSkeleton />
-      </TeacherLayout>
-    )
-  }
-
   return (
     <TeacherLayout>
       <div className="space-y-6">
@@ -322,29 +313,27 @@ export default function QuestionsPage() {
         </div>
 
         {/* Статистические карточки - отдельный контейнер */}
-        <div className="bg-[var(--bg-main-container)] rounded-2xl p-6 shadow-sm ">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title={t('questions.totalQuestions')}
-              value={stats.total}
-              icon={Icons.HelpCircle}
-            />
-            <StatCard
-              title={t('questions.activeQuestions')}
-              value={stats.active}
-              icon={Icons.CheckCircle}
-            />
-            <StatCard
-              title={t('questions.problematicQuestions')}
-              value={stats.problematic}
-              icon={Icons.Flag}
-            />
-            <StatCard
-              title={t('questions.averageCorrect')}
-              value={`${stats.averageCorrect}%`}
-              icon={Icons.TrendingUp}
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatCard
+            title={t('questions.totalQuestions')}
+            value={stats.total}
+            icon={Icons.HelpCircle}
+          />
+          <StatCard
+            title={t('questions.activeQuestions')}
+            value={stats.active}
+            icon={Icons.CheckCircle}
+          />
+          <StatCard
+            title={t('questions.problematicQuestions')}
+            value={stats.problematic}
+            icon={Icons.Flag}
+          />
+          <StatCard
+            title={t('questions.averageCorrect')}
+            value={`${stats.averageCorrect}%`}
+            icon={Icons.TrendingUp}
+          />
         </div>
 
         {/* Фильтры - отдельный контейнер */}

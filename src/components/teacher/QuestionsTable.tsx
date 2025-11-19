@@ -9,6 +9,7 @@ import rehypeRaw from 'rehype-raw'
 import 'katex/dist/katex.min.css'
 import { Icons } from '@/components/ui/Icons'
 import { useTranslation } from '@/hooks/useTranslation'
+import Tooltip from '@/components/ui/Tooltip'
 
 interface Question {
   id: string
@@ -220,27 +221,29 @@ const QuestionsTable: React.FC<QuestionsTableProps> = ({
                   {/* Ячейка "Действия" */}
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onQuestionClick?.(question)
-                        }}
-                        className="relative p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
-                        title={getText('questions.tooltips.details', 'Просмотр')}
-                      >
-                        <Icons.Eye className="h-4 w-4 text-[var(--text-primary)]" />
-                      </button>
-                      {onQuestionEdit && (
+                      <Tooltip text={getText('questions.tooltips.details', 'Просмотр')}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            onQuestionEdit(question)
+                            onQuestionClick?.(question)
                           }}
                           className="relative p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
-                          title={getText('questions.tooltips.edit', 'Редактировать')}
                         >
-                          <Icons.Edit className="h-4 w-4 text-[var(--text-primary)]" />
+                          <Icons.Eye className="h-4 w-4 text-[var(--text-primary)]" />
                         </button>
+                      </Tooltip>
+                      {onQuestionEdit && (
+                        <Tooltip text={getText('questions.tooltips.edit', 'Редактировать')}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onQuestionEdit(question)
+                            }}
+                            className="relative p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
+                          >
+                            <Icons.Edit className="h-4 w-4 text-[var(--text-primary)]" />
+                          </button>
+                        </Tooltip>
                       )}
                     </div>
                   </td>

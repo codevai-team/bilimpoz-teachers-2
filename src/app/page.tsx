@@ -25,20 +25,11 @@ export default function HomePage() {
     return t(key)
   }
 
-  // Предотвращаем ошибки гидратации, пока i18n не готов
-  if (!mounted || !ready) {
-    return (
-      <TeacherLayout>
-        <DashboardSkeleton />
-      </TeacherLayout>
-    )
-  }
-
   return (
     <TeacherLayout>
       <div className="space-y-6">
         {/* 1. Welcome Section */}
-        <div className="bg-[var(--bg-card)] rounded-2xl p-6  shadow-sm">
+        <div className="bg-[var(--bg-card)] rounded-2xl p-6 shadow-sm animate-slide-in-right">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-[var(--bg-tertiary)] rounded-lg flex items-center justify-center">
               <Icons.User className="w-6 h-6 text-[var(--text-primary)]" />

@@ -25,6 +25,12 @@ if (!i18n.isInitialized) {
       fallbackLng: 'ru',
       debug: process.env.NODE_ENV === 'development',
       
+      // Возвращаем ключ, если перевод не найден (по умолчанию)
+      // Но мы обрабатываем это в компонентах через fallback
+      returnNull: false,
+      returnEmptyString: false,
+      returnObjects: false,
+      
       interpolation: {
         escapeValue: false, // React уже экранирует значения
       },

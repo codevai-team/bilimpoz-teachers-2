@@ -6,25 +6,23 @@ class TelegramService {
   /**
    * Получение токена бота из базы данных
    */
-  async getBotToken(tokenType: 'ADMIN_BOT_TOKEN' | 'STUDENT_BOT_TOKEN' = 'ADMIN_BOT_TOKEN'): Promise<string> {
-    // Кэширование для ADMIN_BOT_TOKEN
-    if (tokenType === 'ADMIN_BOT_TOKEN' && this.botToken) {
+  async getBotToken(): Promise<string> {
+    // Кэширование
+    if (this.botToken) {
       return this.botToken
     }
 
     // Получение из базы данных
     const setting = await prisma.settings.findUnique({
-      where: { key: tokenType }
+      where: { key: 'TEACHER_BOT_TOKEN_2' }
     })
 
     if (!setting?.value) {
-      throw new Error(`Telegram bot token not found in settings for ${tokenType}`)
+      throw new Error('Telegram bot token not found in settings for TEACHER_BOT_TOKEN_2')
     }
 
     // Кэширование
-    if (tokenType === 'ADMIN_BOT_TOKEN') {
-      this.botToken = setting.value
-    }
+    this.botToken = setting.value
     
     return setting.value
   }
@@ -34,7 +32,7 @@ class TelegramService {
    */
   async sendMessage(chatId: string, message: string): Promise<boolean> {
     try {
-      const botToken = await this.getBotToken('ADMIN_BOT_TOKEN')
+      const botToken = await this.getBotToken()
       
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
@@ -110,7 +108,7 @@ class TelegramService {
       
       const message = messages[language] || messages.ru
       
-      const botToken = await this.getBotToken('ADMIN_BOT_TOKEN')
+      const botToken = await this.getBotToken()
       
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
@@ -167,7 +165,7 @@ class TelegramService {
 
 ⏰ Код действителен в течение 5 минут.`
 
-      const botToken = await this.getBotToken('ADMIN_BOT_TOKEN')
+      const botToken = await this.getBotToken()
       
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
@@ -213,7 +211,7 @@ class TelegramService {
     failed: number;
     errors: Array<{ telegramId: string; error: string }>;
   }> {
-    const botToken = await this.getBotToken('STUDENT_BOT_TOKEN')
+    const botToken = await this.getBotToken()
     
     let success = 0
     let failed = 0

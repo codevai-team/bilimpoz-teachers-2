@@ -61,8 +61,10 @@ export default function RegisterForm() {
 
     if (!formData.password.trim()) {
       newErrors.password = getText('auth.register.errors.passwordRequired', 'Пароль обязателен для заполнения')
-    } else if (formData.password.length < 6) {
-      newErrors.password = getText('auth.register.errors.passwordMinLength', 'Пароль должен содержать минимум 6 символов')
+    } else if (formData.password.length < 8) {
+      newErrors.password = getText('auth.register.errors.passwordMinLength', 'Пароль должен содержать минимум 8 символов')
+    } else if (formData.password.length > 50) {
+      newErrors.password = getText('auth.register.errors.passwordMaxLength', 'Пароль не должен превышать 50 символов')
     }
 
     setErrors(newErrors)
@@ -222,17 +224,40 @@ export default function RegisterForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-            {getText('auth.register.password', 'Пароль')} <span className="text-red-400">*</span>
-          </label>
+          <div className="flex items-center gap-2 mb-1">
+            <label className="block text-sm font-medium text-[var(--text-secondary)]">
+              {getText('auth.register.password', 'Пароль')} <span className="text-red-400">*</span>
+            </label>
+            <div className="group relative">
+              <Icons.Info className="h-4 w-4 text-[var(--text-tertiary)] cursor-help hover:text-[var(--text-secondary)] transition-colors" />
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 w-64 pointer-events-none">
+                <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-lg p-3 shadow-xl">
+                  <p className="text-xs text-[var(--text-primary)] font-medium mb-2">
+                    {getText('auth.register.passwordRequirements', 'Требования к паролю:')}
+                  </p>
+                  <ul className="text-xs text-[var(--text-secondary)] space-y-1 list-disc list-inside">
+                    <li>{getText('auth.register.passwordReqMin', 'Минимум 8 символов')}</li>
+                    <li>{getText('auth.register.passwordReqMax', 'Максимум 50 символов')}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="relative">
             <Input
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
+              onChange={(e) => {
+                // Ограничение длины пароля
+                const value = e.target.value
+                if (value.length <= 50) {
+                  handleInputChange('password', value)
+                }
+              }}
               placeholder={getText('auth.register.passwordPlaceholder', 'Введите пароль')}
               error={errors.password}
               disabled={isLoading}
+              maxLength={50}
             />
             <button
               type="button"
@@ -254,11 +279,11 @@ export default function RegisterForm() {
           variant="primary"
           size="lg"
           disabled={isLoading}
-          className="w-full"
+          className="w-full !bg-[var(--bg-tertiary)] !text-[var(--text-primary)] !border-2 !border-[var(--border-primary)] hover:!bg-[var(--bg-hover)] focus:!ring-0 focus:!border-[var(--border-primary)] focus:!outline-none"
         >
           {isLoading ? (
             <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[var(--text-tertiary)]/30 border-t-[var(--text-primary)] rounded-full animate-spin" />
               {getText('auth.register.registering', 'Регистрация...')}
             </div>
           ) : (
