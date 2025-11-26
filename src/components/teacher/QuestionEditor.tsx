@@ -88,6 +88,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageToLatexInputRef = useRef<HTMLInputElement>(null)
   
+  // Состояния для resize
+  const [questionHeight, setQuestionHeight] = useState(150)
+  const [answerHeights, setAnswerHeights] = useState<Record<number, number>>({})
+  const [isResizing, setIsResizing] = useState(false)
+  const [resizingField, setResizingField] = useState<{ type: 'question' | 'answer', index?: number } | null>(null)
+  const startYRef = useRef(0)
+  const startHeightRef = useRef(0)
+  
   // AI hooks - с проверкой на существование
   const [aiLoading, setAiLoading] = useState(false)
   const aiHook = typeof window !== 'undefined' ? useAI() : null
@@ -97,6 +105,45 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   useEffect(() => {
     setMounted(true)
   }, [])
+  
+  // Обработчик начала изменения размера
+  const handleResizeStart = (e: React.MouseEvent, type: 'question' | 'answer', index?: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsResizing(true)
+    setResizingField({ type, index })
+    startYRef.current = e.clientY
+    startHeightRef.current = type === 'question' ? questionHeight : (answerHeights[index!] || 60)
+  }
+  
+  // Отслеживание движения мыши при изменении размера
+  useEffect(() => {
+    if (!isResizing || !resizingField) return
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - startYRef.current
+      const newHeight = Math.max(60, Math.min(500, startHeightRef.current + deltaY))
+      
+      if (resizingField.type === 'question') {
+        setQuestionHeight(newHeight)
+      } else if (resizingField.type === 'answer' && resizingField.index !== undefined) {
+        setAnswerHeights(prev => ({ ...prev, [resizingField.index!]: newHeight }))
+      }
+    }
+    
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      setResizingField(null)
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing, resizingField, answerHeights])
 
   // Загрузка данных вопроса
   useEffect(() => {
@@ -752,7 +799,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   return (
     <div className="space-y-6" data-question-id={questionId}>
         {/* Текст вопроса или AI объяснение */}
-        <div>
+        <div className={isShowingExplanation ? "flex flex-col h-full min-h-[500px]" : ""}>
         <div className="flex items-center justify-between mb-3">
           <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
             {isShowingExplanation ? (
@@ -780,31 +827,35 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           
           {isShowingExplanation ? (
             // Отображение AI объяснения - используем TestEditorField
-            <div className="space-y-3">
-              <TestEditorField
-                value={editableExplanation || aiExplanation || ''}
-                onChange={(value) => {
-                  setEditableExplanation(value)
-                  // Сохраняем изменения в localStorage
-                  if (typeof window !== 'undefined' && questionType) {
-                    const questionData = loadQuestionDraft(questionId, questionType)
-                    if (questionData) {
-                      questionData.explanation_ai = value
-                      saveQuestionDraft(questionId, questionType, questionData)
-                    }
-                  }
-                }}
-                placeholder="Введите объяснение..."
-                height={300}
-                isPreviewMode={isPreviewMode}
-                showResizeHandle={true}
-                onFocus={() => {
-                  // Можно добавить логику активации поля
-                }}
-              />
+            <div className="flex flex-col h-full min-h-[500px]">
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0">
+                  <TestEditorField
+                    value={editableExplanation || aiExplanation || ''}
+                    onChange={(value) => {
+                      setEditableExplanation(value)
+                      // Сохраняем изменения в localStorage
+                      if (typeof window !== 'undefined' && questionType) {
+                        const questionData = loadQuestionDraft(questionId, questionType)
+                        if (questionData) {
+                          questionData.explanation_ai = value
+                          saveQuestionDraft(questionId, questionType, questionData)
+                        }
+                      }
+                    }}
+                    placeholder="Введите объяснение..."
+                    height={500}
+                    isPreviewMode={isPreviewMode}
+                    showResizeHandle={true}
+                    onFocus={() => {
+                      // Можно добавить логику активации поля
+                    }}
+                  />
+                </div>
+              </div>
               {/* Кнопка регенерации объяснения */}
               {onRegenerateExplanation && (
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                   <button
                     type="button"
                     onClick={onRegenerateExplanation}
@@ -815,6 +866,80 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   </button>
                 </div>
               )}
+              {/* Баллы и время */}
+              <div className="flex items-center gap-6 pt-4 mt-4 border-t border-gray-800 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center text-sm font-medium text-[var(--text-secondary)] whitespace-nowrap">
+                    <Icons.CircleDot className="h-4 w-4 mr-2 text-[var(--text-primary)]" />
+                    {getText('tests.points', 'Баллы')} <span className="text-red-400"> *</span>
+                  </label>
+                  <div className="w-16">
+                    <input
+                      type="number"
+                      value={points || ''}
+                      onChange={(e) => {
+                        const inputValue = e.target.value
+                        if (inputValue === '') {
+                          setPoints(0)
+                          return
+                        }
+                        const value = parseInt(inputValue) || 0
+                        if (value >= 1 && value <= 5) {
+                          setPoints(value)
+                        } else if (value === 0 && inputValue === '0') {
+                          setPoints(0)
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const value = parseInt(e.target.value) || 1
+                        setPoints(Math.min(Math.max(1, value), 5))
+                      }}
+                      min="1"
+                      max="5"
+                      className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {getText('tests.pointsHint', 'Максимум 5 баллов')}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center text-sm font-medium text-[var(--text-secondary)] whitespace-nowrap">
+                    <Icons.Clock className="h-4 w-4 mr-2 text-[var(--text-primary)]" />
+                    {getText('tests.timeLimit', 'Время (сек)')} <span className="text-red-400"> *</span>
+                  </label>
+                  <div className="w-16">
+                    <input
+                      type="number"
+                      value={timeLimit || ''}
+                      onChange={(e) => {
+                        const inputValue = e.target.value
+                        if (inputValue === '') {
+                          setTimeLimit(0)
+                          return
+                        }
+                        const value = parseInt(inputValue) || 0
+                        if (value >= 1 && value <= 120) {
+                          setTimeLimit(value)
+                        } else if (value === 0 && inputValue === '0') {
+                          setTimeLimit(0)
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const value = parseInt(e.target.value) || 60
+                        setTimeLimit(Math.min(Math.max(1, value), 120))
+                      }}
+                      min="1"
+                      max="120"
+                      className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
+                    />
+                  </div>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {getText('tests.timeLimitHint', 'Максимум 120 секунд')}
+                  </p>
+                </div>
+              </div>
             </div>
           ) : isPreviewMode ? (
             // Режим предпросмотра - показываем обработанный Markdown
@@ -849,7 +974,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             <div className="relative">
               <textarea
                 ref={questionTextareaRef}
-                className="w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-gray-400 bg-[var(--bg-card)] border border-gray-700 transition-all duration-300 ease-in-out focus:outline-none focus:border-white focus:bg-[var(--bg-tertiary)] hover:border-gray-600 resize-none text-sm font-mono min-h-[150px]"
+                style={{ height: `${questionHeight}px` }}
+                className="w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-gray-400 bg-[var(--bg-card)] border border-gray-700 transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-gray-600 resize-none text-sm font-mono"
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}
                 onSelect={(e) => {
@@ -871,7 +997,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => toggleTextVersion('question')}
-                  className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
+                  className="absolute bottom-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
                   title={textVersions.question.isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}
                 >
                   <Icons.ArrowLeft className="h-3.5 w-3.5" />
@@ -879,6 +1005,21 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   <span>{textVersions.question.isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}</span>
                 </button>
               )}
+              {/* Resize handle */}
+              <div
+                className="absolute bottom-2 right-2 w-10 h-10 cursor-nwse-resize flex items-center justify-center group/resize"
+                onMouseDown={(e) => handleResizeStart(e, 'question')}
+              >
+                <svg
+                  className="w-8 h-8 text-gray-500 group-hover/resize:text-gray-400 transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                >
+                  <path d="M20 20L16 16M20 20L16 20M20 20L20 16" />
+                </svg>
+              </div>
             </div>
           )}
         </div>
@@ -948,17 +1089,18 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                     <div className="relative">
                       <textarea
                         data-answer-index={index}
+                        style={{ height: `${answerHeights[index] || 60}px` }}
                         value={answer.value}
                         onChange={(e) => handleAnswerChange(index, e.target.value)}
                         placeholder={`${getText('tests.answer', 'Ответ')} ${index + 1}`}
-                        className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder-gray-400 bg-[var(--bg-card)] border border-gray-700 transition-all duration-300 ease-in-out focus:outline-none focus:border-white focus:bg-[var(--bg-tertiary)] hover:border-gray-600 resize-none text-sm font-mono min-h-[60px]"
+                        className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder-gray-400 bg-[var(--bg-card)] border border-gray-700 transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-gray-600 resize-none text-sm font-mono"
                       />
                       {/* Кнопка переключения версий - показывается только если есть версии */}
                       {textVersions.answers?.[index] && (
                         <button
                           type="button"
                           onClick={() => toggleTextVersion('answer', index)}
-                          className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
+                          className="absolute bottom-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
                           title={textVersions.answers[index].isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}
                         >
                           <Icons.ArrowLeft className="h-3.5 w-3.5" />
@@ -966,6 +1108,21 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                           <span>{textVersions.answers[index].isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}</span>
                         </button>
                       )}
+                      {/* Resize handle */}
+                      <div
+                        className="absolute bottom-2 right-2 w-10 h-10 cursor-nwse-resize flex items-center justify-center group/resize"
+                        onMouseDown={(e) => handleResizeStart(e, 'answer', index)}
+                      >
+                        <svg
+                          className="w-8 h-8 text-gray-500 group-hover/resize:text-gray-400 transition-colors"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                        >
+                          <path d="M20 20L16 16M20 20L16 20M20 20L20 16" />
+                        </svg>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1031,7 +1188,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               }}
               min="1"
               max="5"
-              className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-white focus:bg-[var(--bg-tertiary)] text-center transition-colors"
+              className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
             />
           </div>
           <p className="text-xs text-[var(--text-tertiary)]">
@@ -1067,7 +1224,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               }}
               min="1"
               max="120"
-              className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-white focus:bg-[var(--bg-tertiary)] text-center transition-colors"
+              className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
             />
           </div>
           <p className="text-xs text-[var(--text-tertiary)]">

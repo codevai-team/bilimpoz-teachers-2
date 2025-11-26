@@ -138,25 +138,26 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose()
         }
       }}
     >
-      <div className="bg-[#151515] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-[var(--bg-card)] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-colors">
         {/* Заголовок */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-800">
-          <h3 className="text-lg font-semibold text-white">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-800 dark:border-gray-800">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] transition-colors">
             {getText('testEditor.editTest', 'Редактировать тест')}
           </h3>
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Icons.X className="h-5 w-5 text-gray-400" />
+            <Icons.X className="h-5 w-5 text-[var(--text-tertiary)]" />
           </button>
         </div>
 
@@ -164,15 +165,15 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Основная информация */}
           <div>
-            <h2 className="text-xl font-semibold text-white border-b border-gray-800 pb-4 mb-6">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] border-b border-gray-800 dark:border-gray-800 pb-4 mb-6 transition-colors">
               {getText('testEditor.basicInfo', 'Основная информация')}
             </h2>
             
             <div className="space-y-6">
               {/* Название теста */}
               <div ref={nameRef}>
-                <label className="flex items-center text-sm font-medium text-gray-300 mb-3">
-                  <Icons.Type className="h-4 w-4 mr-2 text-white" />
+                <label className="flex items-center text-sm font-medium text-[var(--text-secondary)] mb-3 transition-colors">
+                  <Icons.Type className="h-4 w-4 mr-2 text-[var(--text-primary)]" />
                   {getText('testEditor.testName', 'Название теста')} *
                 </label>
                 <Input
@@ -191,16 +192,16 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
               {/* Описание теста */}
               <div ref={descriptionRef}>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="flex items-center text-sm font-medium text-gray-300">
-                    <Icons.FileText className="h-4 w-4 mr-2 text-white" />
+                  <label className="flex items-center text-sm font-medium text-[var(--text-secondary)] transition-colors">
+                    <Icons.FileText className="h-4 w-4 mr-2 text-[var(--text-primary)]" />
                     {getText('testEditor.testDescription', 'Описание теста')} *
                   </label>
-                  <span className={`text-xs ${
+                  <span className={`text-xs transition-colors ${
                     formData.description.length > 600 
                       ? 'text-red-400' 
                       : formData.description.length > 550 
                         ? 'text-yellow-400' 
-                        : 'text-gray-400'
+                        : 'text-[var(--text-tertiary)]'
                   }`}>
                     {formData.description.length} / 600
                   </span>
@@ -218,8 +219,8 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
                   rows={4}
                   maxLength={600}
                   className={`
-                    w-full px-5 py-4 rounded-xl text-white placeholder-gray-400
-                    bg-[#0b0b0b] border transition-all duration-300 ease-in-out
+                    w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-gray-400
+                    bg-[var(--bg-input)] border transition-all duration-300 ease-in-out
                     focus:outline-none focus:border-white hover:border-gray-500
                     ${errors.description ? 'border-red-500 focus:border-red-400' : 'border-gray-600'}
                     ${formData.description.length > 600 ? 'border-red-500' : ''}
@@ -238,8 +239,8 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
 
               {/* Язык */}
               <div>
-                <label className="flex items-center text-sm font-medium text-gray-300 mb-3">
-                  <Icons.Globe className="h-4 w-4 mr-2 text-white" />
+                <label className="flex items-center text-sm font-medium text-[var(--text-secondary)] mb-3 transition-colors">
+                  <Icons.Globe className="h-4 w-4 mr-2 text-[var(--text-primary)]" />
                   {getText('testEditor.testLanguage', 'Язык теста')}
                 </label>
                 <Select
@@ -253,7 +254,7 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
           </div>
 
           {/* Кнопки */}
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-800">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-800 dark:border-gray-800">
             <Button
               type="button"
               variant="outline"

@@ -948,7 +948,7 @@ export default function TestEditorPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 pb-24">
+              <div className="space-y-6">
                 {questions.map((question, index) => (
                   <div key={question.id} className="bg-[var(--bg-tertiary)] rounded-xl p-6 space-y-6 transition-colors">
                     <div className="flex items-center justify-between">

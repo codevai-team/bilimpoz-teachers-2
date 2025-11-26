@@ -42,6 +42,26 @@ const TestEditorField = forwardRef<HTMLDivElement, TestEditorFieldProps>(
     const containerRef = useRef<HTMLDivElement>(null)
     const startYRef = useRef(0)
     const startHeightRef = useRef(height)
+    const [colorMode, setColorMode] = useState<'dark' | 'light'>('dark')
+    
+    // Определяем тему из data-theme атрибута
+    useEffect(() => {
+      const updateColorMode = () => {
+        const theme = document.documentElement.getAttribute('data-theme')
+        setColorMode(theme === 'light' ? 'light' : 'dark')
+      }
+      
+      updateColorMode()
+      
+      // Отслеживаем изменения темы
+      const observer = new MutationObserver(updateColorMode)
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+      })
+      
+      return () => observer.disconnect()
+    }, [])
 
     // Обновляем высоту при изменении prop height
     useEffect(() => {
@@ -197,6 +217,13 @@ const TestEditorField = forwardRef<HTMLDivElement, TestEditorFieldProps>(
             width: 0 !important;
             height: 0 !important;
           }
+          .w-md-editor-preview,
+          .w-md-editor-preview * {
+            background: var(--bg-card) !important;
+          }
+          .w-md-editor-preview {
+            background-color: var(--bg-card) !important;
+          }
         `
         document.head.appendChild(style)
       }
@@ -223,15 +250,18 @@ const TestEditorField = forwardRef<HTMLDivElement, TestEditorFieldProps>(
     return (
       <div
         ref={containerRef}
-        className="relative"
+        className="relative h-full flex flex-col"
         onClick={handleClick}
       >
         <div
           style={{
             pointerEvents: isActive ? 'auto' : 'none',
-            borderColor: hasError ? '#ef4444' : isActive ? '#ffffff' : '#374151'
+            borderColor: hasError ? '#ef4444' : isActive ? '#ffffff' : '#374151',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
           }}
-          className="rounded-xl border transition-colors"
+          className="rounded-xl border transition-colors flex-1 min-h-0"
         >
           <MDEditor
             value={value}
@@ -240,7 +270,7 @@ const TestEditorField = forwardRef<HTMLDivElement, TestEditorFieldProps>(
             hideToolbar={true}
             visibleDragbar={false}
             height={currentHeight}
-            data-color-mode="dark"
+            data-color-mode={colorMode}
             previewOptions={{
               remarkPlugins: [remarkMath],
               rehypePlugins: [rehypeKatex]
@@ -249,8 +279,8 @@ const TestEditorField = forwardRef<HTMLDivElement, TestEditorFieldProps>(
               placeholder
             }}
             style={{
-              background: '#151515',
-              color: '#ffffff'
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)'
             }}
           />
         </div>
