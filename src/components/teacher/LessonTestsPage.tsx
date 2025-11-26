@@ -194,6 +194,10 @@ const LessonTestsPage: React.FC<LessonTestsPageProps> = ({
           isPreviewMode={getIsPreviewMode()} 
           onImageToLatex={handleOpenImageLatex}
           onMagicWand={handleMagicWand}
+          onExplainQuestion={() => {
+            // В LessonTestsPage объяснение вопросов пока не поддерживается
+            alert('Функция объяснения доступна только в редакторе тестов')
+          }}
         />
       </div>
 

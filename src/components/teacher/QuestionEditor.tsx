@@ -32,6 +32,7 @@ interface QuestionEditorProps {
   isPreviewMode?: boolean
   onFormatRegister?: (handler: (format: string) => void) => void
   onRegenerateExplanation?: () => void
+  onAiLoadingChange?: (questionId: string, isLoading: boolean) => void
 }
 
 const QuestionEditor: React.FC<QuestionEditorProps> = ({
@@ -45,18 +46,41 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   aiExplanation = '',
   isPreviewMode: externalPreviewMode = false,
   onFormatRegister,
-  onRegenerateExplanation
+  onRegenerateExplanation,
+  onAiLoadingChange
 }) => {
   const { t, ready } = useTranslation()
   const [mounted, setMounted] = useState(false)
   const [questionText, setQuestionText] = useState('')
   
-  // Определяем начальное количество ответов в зависимости от типа вопроса
-  const getInitialAnswersCount = () => {
-    if (questionType === 'math2' || questionType === 'standard') {
+  // Определяем минимальное количество ответов в зависимости от типа вопроса
+  const getMinAnswersCountForType = (type: string) => {
+    if (type === 'math1') {
+      return 2
+    }
+    if (type === 'math2') {
       return 5
     }
-    return 4 // math1, analogy, rac, grammar
+    return 2 // analogy, rac, grammar, standard - минимум 2
+  }
+  
+  // Определяем максимальное количество ответов в зависимости от типа вопроса
+  const getMaxAnswersCountForType = (type: string) => {
+    if (type === 'math1') {
+      return 2 // Строго 2 ответа
+    }
+    if (type === 'math2') {
+      return 5 // Строго 5 ответов
+    }
+    if (type === 'analogy' || type === 'rac' || type === 'grammar') {
+      return 4 // Строго 4 ответа
+    }
+    return 10 // standard - до 10 ответов
+  }
+  
+  // Определяем начальное количество ответов в зависимости от типа вопроса
+  const getInitialAnswersCount = () => {
+    return getMaxAnswersCountForType(questionType)
   }
   
   const [answers, setAnswers] = useState<Array<{ value: string; isCorrect: boolean }>>(
@@ -164,7 +188,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           }
           
           if (loadedData.textVersions.answers) {
-            const defaultAnswersCount = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+            const defaultAnswersCount = getMaxAnswersCountForType(questionType)
             const loadedAnswers = loadedData.answers && loadedData.answers.length > 0 
               ? loadedData.answers 
               : Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false }))
@@ -180,7 +204,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               return answer
             }))
           } else {
-            const defaultAnswersCount = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+            const defaultAnswersCount = getMaxAnswersCountForType(questionType)
             setAnswers(loadedData.answers && loadedData.answers.length > 0 
               ? loadedData.answers 
               : Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false }))
@@ -188,7 +212,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           }
         } else {
           setQuestionText(loadedData.question || '')
-          const defaultAnswersCount = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+          const defaultAnswersCount = getMaxAnswersCountForType(questionType)
           setAnswers(loadedData.answers && loadedData.answers.length > 0 
             ? loadedData.answers 
             : Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false }))
@@ -200,7 +224,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         setImageUrl(loadedData.imageUrl || '')
       } else {
       // Если данных нет, инициализируем с правильным количеством ответов
-      const defaultAnswersCount = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+      const defaultAnswersCount = getMaxAnswersCountForType(questionType)
       setAnswers(Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false })))
     }
   }, [mounted, questionId, questionType])
@@ -209,7 +233,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   useEffect(() => {
     if (!mounted) return
     
-    const requiredCount = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+    const requiredCount = getMaxAnswersCountForType(questionType)
     
     // Если текущее количество ответов не соответствует требуемому, обновляем
     if (answers.length !== requiredCount) {
@@ -311,6 +335,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
   // AI улучшение текста
   const handleMagicWand = React.useCallback(async (fieldType: 'question' | 'answer' = 'question', answerIndex?: number) => {
+    console.log('🔮 handleMagicWand вызван', { fieldType, answerIndex, questionId })
+    
     let textarea: HTMLTextAreaElement | null = null
     let currentText = ''
     let start = 0
@@ -318,23 +344,39 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
     if (fieldType === 'question') {
       textarea = questionTextareaRef.current
-      if (!textarea) return
+      if (!textarea) {
+        console.error('❌ textarea для вопроса не найден')
+        alert('Ошибка: поле вопроса не найдено')
+        return
+      }
       start = textarea.selectionStart
       end = textarea.selectionEnd
       currentText = questionText
+      console.log('📝 Вопрос:', { start, end, textLength: currentText.length })
     } else if (fieldType === 'answer' && answerIndex !== undefined) {
-      // Находим textarea для ответа
-      const answerTextarea = document.querySelector(`textarea[data-answer-index="${answerIndex}"]`) as HTMLTextAreaElement
-      if (!answerTextarea) return
+      // Находим textarea для ответа - используем более надежный селектор
+      const container = document.querySelector(`[data-question-id="${questionId}"]`)
+      const answerTextarea = container?.querySelector(`textarea[data-answer-index="${answerIndex}"]`) as HTMLTextAreaElement
+      
+      if (!answerTextarea) {
+        console.error('❌ textarea для ответа не найден', { answerIndex, questionId })
+        alert(`Ошибка: поле ответа ${answerIndex + 1} не найдено`)
+        return
+      }
       textarea = answerTextarea
       start = textarea.selectionStart
       end = textarea.selectionEnd
       currentText = answers[answerIndex]?.value || ''
+      console.log('📝 Ответ:', { answerIndex, start, end, textLength: currentText.length })
     }
 
-    if (!textarea) return
+    if (!textarea) {
+      console.error('❌ textarea не найден')
+      return
+    }
 
     const selectedText = currentText.substring(start, end).trim()
+    console.log('✂️ Выделенный текст:', { selectedText, length: selectedText.length })
 
     if (!selectedText) {
       alert(getText('testEditor.errors.selectTextToImprove', 'Выделите текст, который нужно улучшить'))
@@ -342,14 +384,20 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     }
 
     if (!improveText) {
-      alert(getText('testEditor.errors.aiNotAvailable', 'AI функция недоступна'))
+      console.error('❌ improveText функция недоступна')
+      alert(getText('testEditor.errors.aiNotAvailable', 'AI функция недоступна. Проверьте настройки OpenAI API.'))
       return
     }
+    
+    console.log('✅ Начинаем улучшение текста...')
 
     setAiLoading(true)
+    onAiLoadingChange?.(questionId, true)
     try {
+      console.log('🤖 Вызываем AI для улучшения текста...', { selectedText: selectedText.substring(0, 50), language: testLanguage })
       // Вызываем AI для улучшения текста
       const improvedText = await improveText(selectedText, testLanguage)
+      console.log('✅ Текст улучшен:', { improvedText: improvedText.substring(0, 50) })
 
       // Сохраняем оригинальную версию
       const originalText = currentText
@@ -416,29 +464,148 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         }
       }, 0)
     } catch (error) {
-      console.error('Ошибка улучшения текста:', error)
-      alert(getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста'))
+      console.error('❌ Ошибка улучшения текста:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка'
+      alert(`${getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста')}: ${errorMessage}`)
     } finally {
       setAiLoading(false)
+      onAiLoadingChange?.(questionId, false)
+      console.log('🏁 Завершено улучшение текста')
     }
-  }, [questionText, answers, questionType, questionId, textVersions, points, timeLimit, improveText, testLanguage])
+  }, [questionText, answers, questionType, questionId, textVersions, points, timeLimit, improveText, testLanguage, onAiLoadingChange])
+
+  // Состояние для сохранения выделения
+  const [savedTextareaSelection, setSavedTextareaSelection] = useState<{
+    textarea: HTMLTextAreaElement | null
+    fieldType: 'question' | 'answer' | null
+    answerIndex: number | null
+  } | null>(null)
 
   // Обработчики форматирования текста
   const handleFormat = React.useCallback((format: string) => {
+    // Если это вставка текста (для LaTeX формул)
+    if (format.startsWith('insert-text:')) {
+      try {
+        const jsonValue = format.substring('insert-text:'.length)
+        const newValue = JSON.parse(jsonValue)
+        console.log('📝 Вставка текста в вопрос:', newValue.substring(0, 50))
+        setQuestionText(newValue)
+        
+        // Обновляем textarea и триггерим события
+        if (questionTextareaRef.current) {
+          questionTextareaRef.current.value = newValue
+          const inputEvent = new Event('input', { bubbles: true })
+          const changeEvent = new Event('change', { bubbles: true })
+          questionTextareaRef.current.dispatchEvent(inputEvent)
+          questionTextareaRef.current.dispatchEvent(changeEvent)
+        }
+      } catch (error) {
+        console.error('❌ Ошибка парсинга JSON при вставке текста:', error)
+        // Fallback: используем как есть (для обратной совместимости)
+        const newValue = format.substring('insert-text:'.length)
+        setQuestionText(newValue)
+        if (questionTextareaRef.current) {
+          questionTextareaRef.current.value = newValue
+        }
+      }
+      return
+    }
+    
+    // Если это вставка текста в ответ
+    if (format.startsWith('insert-answer-text:')) {
+      try {
+        const afterPrefix = format.substring('insert-answer-text:'.length)
+        const colonIndex = afterPrefix.indexOf(':')
+        if (colonIndex > 0) {
+          const answerIndex = parseInt(afterPrefix.substring(0, colonIndex))
+          const jsonValue = afterPrefix.substring(colonIndex + 1)
+          const newValue = JSON.parse(jsonValue)
+          
+          console.log('📝 Вставка текста в ответ:', answerIndex, newValue.substring(0, 50))
+          
+          setAnswers(prev => prev.map((a, i) => 
+            i === answerIndex ? { ...a, value: newValue } : a
+          ))
+          
+          // Обновляем textarea
+          const container = document.querySelector(`[data-question-id="${questionId}"]`)
+          const answerTextarea = container?.querySelector(`textarea[data-answer-index="${answerIndex}"]`) as HTMLTextAreaElement
+          if (answerTextarea) {
+            answerTextarea.value = newValue
+            const inputEvent = new Event('input', { bubbles: true })
+            const changeEvent = new Event('change', { bubbles: true })
+            answerTextarea.dispatchEvent(inputEvent)
+            answerTextarea.dispatchEvent(changeEvent)
+          }
+        }
+      } catch (error) {
+        console.error('❌ Ошибка парсинга JSON при вставке текста в ответ:', error)
+      }
+      return
+    }
+    
     // Если это улучшение текста через Magic Wand
     if (format === 'magic-wand') {
-      const activeElement = document.activeElement
-      if (activeElement && activeElement.tagName === 'TEXTAREA') {
-        const textarea = activeElement as HTMLTextAreaElement
-        const isQuestionTextarea = textarea === questionTextareaRef.current
-        const answerIndexAttr = textarea.getAttribute('data-answer-index')
-        const answerIndex = answerIndexAttr !== null ? parseInt(answerIndexAttr) : undefined
-        
-        if (isQuestionTextarea) {
-          handleMagicWand('question')
-        } else if (answerIndex !== undefined) {
-          handleMagicWand('answer', answerIndex)
+      console.log('✨ Magic Wand вызван через handleFormat')
+      
+      // Сначала пытаемся использовать сохраненное выделение
+      let textarea: HTMLTextAreaElement | null = null
+      let fieldType: 'question' | 'answer' | null = null
+      let answerIndex: number | null = null
+      
+      if (savedTextareaSelection && savedTextareaSelection.textarea) {
+        textarea = savedTextareaSelection.textarea
+        fieldType = savedTextareaSelection.fieldType
+        answerIndex = savedTextareaSelection.answerIndex
+        console.log('💾 Используем сохраненное выделение')
+      } else {
+        // Fallback: ищем активный элемент
+        const activeElement = document.activeElement
+        if (activeElement && activeElement.tagName === 'TEXTAREA') {
+          textarea = activeElement as HTMLTextAreaElement
+          const isQuestionTextarea = textarea === questionTextareaRef.current
+          const answerIndexAttr = textarea.getAttribute('data-answer-index')
+          answerIndex = answerIndexAttr !== null ? parseInt(answerIndexAttr) : null
+          fieldType = isQuestionTextarea ? 'question' : (answerIndex !== null ? 'answer' : null)
+          console.log('📋 Используем активный элемент')
         }
+      }
+      
+      if (textarea) {
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        
+        console.log('📋 Определение типа поля:', { 
+          fieldType, 
+          answerIndex, 
+          selectionStart: start, 
+          selectionEnd: end,
+          hasSelection: start !== end
+        })
+        
+        // Проверяем, есть ли выделение
+        if (start === end) {
+          alert('Выделите текст, который нужно улучшить')
+          setSavedTextareaSelection(null)
+          return
+        }
+        
+        if (fieldType === 'question') {
+          console.log('📝 Обрабатываем вопрос')
+          handleMagicWand('question')
+        } else if (fieldType === 'answer' && answerIndex !== null && !isNaN(answerIndex)) {
+          console.log('📝 Обрабатываем ответ', answerIndex)
+          handleMagicWand('answer', answerIndex)
+        } else {
+          console.error('❌ Не удалось определить тип поля')
+          alert('Ошибка: не удалось определить активное поле')
+        }
+        
+        // Очищаем сохраненное выделение после использования
+        setSavedTextareaSelection(null)
+      } else {
+        console.error('❌ textarea не найден')
+        alert('Выберите поле для улучшения текста')
       }
       return
     }
@@ -574,12 +741,86 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       }, 0)
   }, [questionText, handleMagicWand])
 
+  // Сохранение выделения при каждом изменении выделения в textarea
+  useEffect(() => {
+    const saveSelection = (textarea: HTMLTextAreaElement, fieldType: 'question' | 'answer', answerIndex: number | null) => {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      if (start !== end) {
+        setSavedTextareaSelection({
+          textarea,
+          fieldType,
+          answerIndex
+        })
+        console.log('💾 Выделение сохранено', { fieldType, answerIndex, start, end })
+      }
+    }
+
+    const questionTextarea = questionTextareaRef.current
+    if (questionTextarea) {
+      // Сохраняем выделение при каждом изменении
+      const handleSelectionChange = () => {
+        if (document.activeElement === questionTextarea) {
+          saveSelection(questionTextarea, 'question', null)
+        }
+      }
+      
+      questionTextarea.addEventListener('mouseup', handleSelectionChange)
+      questionTextarea.addEventListener('keyup', handleSelectionChange)
+      questionTextarea.addEventListener('select', handleSelectionChange)
+
+      return () => {
+        questionTextarea.removeEventListener('mouseup', handleSelectionChange)
+        questionTextarea.removeEventListener('keyup', handleSelectionChange)
+        questionTextarea.removeEventListener('select', handleSelectionChange)
+      }
+    }
+  }, [questionId, questionText])
+
+  // Сохранение выделения для ответов
+  useEffect(() => {
+    const answerTextareas = document.querySelectorAll(`[data-question-id="${questionId}"] textarea[data-answer-index]`)
+    
+    const handleSelectionChange = (textarea: HTMLTextAreaElement) => {
+      if (document.activeElement === textarea) {
+        const answerIndexAttr = textarea.getAttribute('data-answer-index')
+        const answerIndex = answerIndexAttr !== null ? parseInt(answerIndexAttr) : null
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        if (start !== end) {
+          setSavedTextareaSelection({
+            textarea,
+            fieldType: 'answer',
+            answerIndex
+          })
+          console.log('💾 Выделение ответа сохранено', answerIndex)
+        }
+      }
+    }
+
+    answerTextareas.forEach((textarea) => {
+      const htmlTextarea = textarea as HTMLTextAreaElement
+      htmlTextarea.addEventListener('mouseup', () => handleSelectionChange(htmlTextarea))
+      htmlTextarea.addEventListener('keyup', () => handleSelectionChange(htmlTextarea))
+      htmlTextarea.addEventListener('select', () => handleSelectionChange(htmlTextarea))
+    })
+
+    return () => {
+      answerTextareas.forEach((textarea) => {
+        const htmlTextarea = textarea as HTMLTextAreaElement
+        htmlTextarea.removeEventListener('mouseup', () => handleSelectionChange(htmlTextarea))
+        htmlTextarea.removeEventListener('keyup', () => handleSelectionChange(htmlTextarea))
+        htmlTextarea.removeEventListener('select', () => handleSelectionChange(htmlTextarea))
+      })
+    }
+  }, [questionId, answers])
+
   // Регистрация обработчика форматирования для родительского компонента
   useEffect(() => {
     if (onFormatRegister) {
       onFormatRegister(handleFormat)
     }
-  }, [onFormatRegister, handleFormat])
+  }, [onFormatRegister, handleFormat, savedTextareaSelection])
 
   // Загрузка изображения
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -761,12 +1002,15 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
   // Управление вариантами ответов
   const handleAddAnswer = () => {
-    setAnswers([...answers, { value: '', isCorrect: false }])
+    const maxAnswers = getMaxAnswersCountForType(questionType)
+    if (answers.length < maxAnswers) {
+      setAnswers([...answers, { value: '', isCorrect: false }])
+    }
   }
 
   const handleRemoveAnswer = (index: number) => {
     // Минимальное количество ответов зависит от типа вопроса
-    const minAnswers = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+    const minAnswers = getMinAnswersCountForType(questionType)
     
     if (answers.length > minAnswers) {
       const wasCorrect = answers[index].isCorrect
@@ -1128,7 +1372,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 </div>
                 {/* Кнопка удаления - показываем если больше минимального количества */}
                 {(() => {
-                  const minAnswers = questionType === 'math2' || questionType === 'standard' ? 5 : 4
+                  const minAnswers = getMinAnswersCountForType(questionType)
                   return answers.length > minAnswers
                 })() && (
                   <button
@@ -1144,11 +1388,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             ))}
           </div>
 
-          {/* Кнопка добавления ответа - только для стандартной секции */}
-          {questionType === 'standard' && (
+          {/* Кнопка добавления ответа - показываем если можно добавить больше */}
+          {(() => {
+            const maxAnswers = getMaxAnswersCountForType(questionType)
+            return answers.length < maxAnswers
+          })() && (
             <button
               onClick={handleAddAnswer}
-            className="mt-3 w-full px-4 py-2.5 border-2 border-dashed border-gray-700 rounded-lg hover:border-white hover:bg-gray-800/50 transition-colors flex items-center justify-center gap-2 text-gray-400 hover:text-white"
+              className="mt-3 w-full px-4 py-2.5 border-2 border-dashed border-gray-700 rounded-lg hover:border-white hover:bg-gray-800/50 transition-colors flex items-center justify-center gap-2 text-gray-400 hover:text-white"
             >
               <Icons.Plus className="h-5 w-5" />
               <span>{getText('tests.addAnswer', 'Добавить вариант')}</span>

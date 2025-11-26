@@ -604,6 +604,10 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
               onImageToLatex={handleImageToLatex}
               onMagicWand={handleMagicWand}
               onTogglePreview={handleTogglePreview}
+              onExplainQuestion={() => {
+                // В модальном окне создания объяснение пока не поддерживается
+                alert('Сначала создайте вопрос, затем сможете получить объяснение')
+              }}
               activeFormats={getActiveFormats(formData.question, cursorPosition.start, cursorPosition.end)}
             />
             

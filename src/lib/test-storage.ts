@@ -264,6 +264,92 @@ export function removeDuplicateQuestions(testId: string): void {
 }
 
 /**
+ * Определяем минимальное количество ответов в зависимости от типа вопроса
+ */
+export function getMinAnswersCountForType(type: string): number {
+  if (type === 'math1') {
+    return 2
+  }
+  if (type === 'math2') {
+    return 5
+  }
+  return 2 // analogy, rac, grammar, standard - минимум 2
+}
+
+/**
+ * Определяем максимальное количество ответов в зависимости от типа вопроса
+ */
+export function getMaxAnswersCountForType(type: string): number {
+  if (type === 'math1') {
+    return 2 // Строго 2 ответа
+  }
+  if (type === 'math2') {
+    return 5 // Строго 5 ответов
+  }
+  if (type === 'analogy' || type === 'rac' || type === 'grammar') {
+    return 4 // Строго 4 ответа
+  }
+  return 10 // standard - до 10 ответов
+}
+
+/**
+ * Получение временных вопросов (созданных пользователем, но не сохраненных в БД)
+ */
+export function getTempQuestions(testId: string): Array<{ id: string; type: QuestionType; data: QuestionData }> {
+  try {
+    const questions = getTestQuestions(testId)
+    const tempQuestions: Array<{ id: string; type: QuestionType; data: QuestionData }> = []
+    
+    for (const question of questions) {
+      if (isTempId(question.id)) {
+        const data = loadQuestionDraft(question.id, question.type)
+        if (data) {
+          tempQuestions.push({
+            id: question.id,
+            type: question.type,
+            data
+          })
+        }
+      }
+    }
+    
+    console.log(`Найдено ${tempQuestions.length} временных вопросов для теста ${testId}`)
+    return tempQuestions
+  } catch (error) {
+    console.error('Ошибка получения временных вопросов:', error)
+    return []
+  }
+}
+
+/**
+ * Очистка только сохраненных вопросов (не временных)
+ */
+export function clearSavedQuestionsFromLocalStorage(testId: string): void {
+  try {
+    console.log(`Очистка сохраненных вопросов теста ${testId} из localStorage`)
+    
+    // Получаем все вопросы теста
+    const questions = getTestQuestions(testId)
+    
+    // Удаляем только НЕ временные вопросы
+    for (const question of questions) {
+      if (!isTempId(question.id)) {
+        removeQuestionDraft(question.id, question.type)
+      }
+    }
+    
+    // Обновляем список вопросов, оставляя только временные
+    const tempQuestions = questions.filter(q => isTempId(q.id))
+    const key = `${TEST_QUESTIONS_PREFIX}${testId}`
+    localStorage.setItem(key, JSON.stringify(tempQuestions))
+    
+    console.log(`Очищено ${questions.length - tempQuestions.length} сохраненных вопросов, оставлено ${tempQuestions.length} временных`)
+  } catch (error) {
+    console.error('Ошибка очистки сохраненных вопросов:', error)
+  }
+}
+
+/**
  * Полная очистка всех данных теста из localStorage
  */
 export function clearTestFromLocalStorage(testId: string): void {

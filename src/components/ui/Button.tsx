@@ -19,14 +19,14 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed'
+  const baseClasses = 'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed'
   
   const variantClasses = {
-    primary: 'bg-[var(--bg-active-button)] text-[var(--text-active-button)] hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] border-2 border-[var(--border-primary)] shadow-lg hover:shadow-xl focus:ring-[var(--accent-primary)]/30',
-    secondary: 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] hover:scale-[1.02] active:scale-[0.98] border border-[var(--border-primary)] shadow-md hover:shadow-lg focus:ring-[var(--accent-primary)]/20',
-    outline: 'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-[var(--border-primary)] focus:ring-[var(--accent-primary)]/30',
-    danger: 'bg-[var(--accent-danger)] text-white hover:bg-red-700 hover:scale-[1.02] active:scale-[0.98] border border-[var(--accent-danger)] shadow-lg hover:shadow-xl focus:ring-[var(--accent-danger)]/30',
-    warning: 'bg-[var(--accent-warning)] text-white hover:bg-yellow-700 hover:scale-[1.02] active:scale-[0.98] border border-[var(--accent-warning)] shadow-lg hover:shadow-xl focus:ring-[var(--accent-warning)]/30'
+    primary: 'bg-[var(--bg-active-button)] text-[var(--text-active-button)] hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] border-2 border-[var(--border-primary)] shadow-lg hover:shadow-xl focus:opacity-85',
+    secondary: 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] hover:scale-[1.02] active:scale-[0.98] border border-[var(--border-primary)] shadow-md hover:shadow-lg focus:bg-[var(--bg-hover)]',
+    outline: 'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-[var(--border-primary)] focus:bg-[var(--bg-hover)]',
+    danger: 'bg-[var(--accent-danger)] text-white hover:bg-red-700 hover:scale-[1.02] active:scale-[0.98] border border-[var(--accent-danger)] shadow-lg hover:shadow-xl focus:opacity-85',
+    warning: 'bg-[var(--accent-warning)] text-white hover:bg-yellow-700 hover:scale-[1.02] active:scale-[0.98] border border-[var(--accent-warning)] shadow-lg hover:shadow-xl focus:opacity-85'
   }
   
   const sizeClasses = {

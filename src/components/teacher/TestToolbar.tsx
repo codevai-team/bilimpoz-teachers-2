@@ -19,25 +19,62 @@ interface TestToolbarProps {
   isPreviewMode: boolean;
   onImageToLatex?: () => void;
   onMagicWand?: () => void;
+  onSaveSelection?: () => void;
   onTogglePreview?: () => void;
+  onExplainQuestion?: () => void;
   activeFormats?: ActiveFormats;
   isAiLoading?: boolean;
 }
 
-export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, onMagicWand, onTogglePreview, activeFormats, isAiLoading = false }: TestToolbarProps) {
+export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, onMagicWand, onSaveSelection, onTogglePreview, onExplainQuestion, activeFormats, isAiLoading = false }: TestToolbarProps) {
   const { t, getCurrentLanguage } = useTranslation();
   const [showAiDropdown, setShowAiDropdown] = useState(false);
   const aiDropdownRef = useRef<HTMLDivElement>(null);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
+  const savedActiveElementRef = useRef<HTMLElement | null>(null);
   
   // Применяем кастомные подсказки с текущим языком
   useCustomTooltips(undefined, getCurrentLanguage());
+
+  // Сохранение активного элемента при открытии меню
+  useEffect(() => {
+    if (showAiDropdown) {
+      // Сохраняем активный элемент при открытии меню
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && activeElement.tagName === 'TEXTAREA') {
+        savedActiveElementRef.current = activeElement;
+        console.log('💾 Сохранен активный элемент при открытии меню:', activeElement.tagName);
+      } else {
+        // Ищем последний активный textarea
+        const allTextareas = document.querySelectorAll('textarea');
+        if (allTextareas.length > 0) {
+          savedActiveElementRef.current = allTextareas[allTextareas.length - 1] as HTMLElement;
+          console.log('💾 Сохранен последний textarea при открытии меню');
+        }
+      }
+    } else {
+      // Восстанавливаем фокус при закрытии меню (если не было клика по функции)
+      if (savedActiveElementRef.current && savedActiveElementRef.current.tagName === 'TEXTAREA') {
+        setTimeout(() => {
+          savedActiveElementRef.current?.focus();
+          savedActiveElementRef.current = null;
+        }, 100);
+      }
+    }
+  }, [showAiDropdown]);
 
   // Закрытие дропдауна при клике вне его
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (aiDropdownRef.current && !aiDropdownRef.current.contains(event.target as Node)) {
         setShowAiDropdown(false);
+        // Восстанавливаем фокус при закрытии меню
+        setTimeout(() => {
+          if (savedActiveElementRef.current && savedActiveElementRef.current.tagName === 'TEXTAREA') {
+            savedActiveElementRef.current.focus();
+          }
+          savedActiveElementRef.current = null;
+        }, 0);
       }
     };
     if (showAiDropdown) {
@@ -143,7 +180,14 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
         <div className="relative z-10" ref={aiDropdownRef}>
           <button
             type="button"
-            onClick={() => setShowAiDropdown(!showAiDropdown)}
+            onMouseDown={(e) => {
+              // Сохраняем активный элемент перед открытием меню
+              savedActiveElementRef.current = document.activeElement as HTMLElement;
+              e.preventDefault(); // Предотвращаем потерю фокуса
+            }}
+            onClick={() => {
+              setShowAiDropdown(!showAiDropdown);
+            }}
             className={`p-2.5 rounded-lg transition-colors group ${
               showAiDropdown ? 'bg-[var(--bg-hover)]' : 'hover:bg-[var(--bg-hover)]'
             }`}
@@ -158,14 +202,70 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
 
           {/* Выпадающее меню вверх */}
           {showAiDropdown && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg shadow-2xl overflow-hidden min-w-[200px] z-20">
+            <div 
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg shadow-2xl overflow-hidden min-w-[220px] z-20"
+              onMouseEnter={() => {
+                // Сохраняем активный элемент при наведении на меню
+                if (!savedActiveElementRef.current) {
+                  savedActiveElementRef.current = document.activeElement as HTMLElement;
+                  console.log('💾 Сохранен активный элемент при наведении на меню');
+                }
+              }}
+            >
+              {/* Объяснить вопрос */}
               <button
                 type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // Предотвращаем потерю фокуса
+                }}
+                onClick={() => {
+                  onExplainQuestion?.();
+                  setShowAiDropdown(false);
+                  // Восстанавливаем фокус на сохраненном элементе
+                  setTimeout(() => {
+                    if (savedActiveElementRef.current && savedActiveElementRef.current.tagName === 'TEXTAREA') {
+                      savedActiveElementRef.current.focus();
+                    }
+                    savedActiveElementRef.current = null;
+                  }, 0);
+                }}
+                className="w-full px-4 py-3 text-left text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-3"
+              >
+                <div className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <path d="M12 17h.01"/>
+                  </svg>
+                  <svg width="16" height="16" viewBox="0 0 512 512" fill="currentColor">
+                    <path d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"/>
+                  </svg>
+                </div>
+                <span className="text-sm">Объяснить вопрос</span>
+              </button>
+              
+              {/* Разделитель */}
+              <div className="h-px bg-[var(--border-primary)] mx-2" />
+              
+              {/* Изображение в LaTeX */}
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // Предотвращаем потерю фокуса
+                }}
                 onClick={() => {
                   onImageToLatex?.();
                   setShowAiDropdown(false);
+                  // Восстанавливаем фокус на сохраненном элементе
+                  setTimeout(() => {
+                    if (savedActiveElementRef.current && savedActiveElementRef.current.tagName === 'TEXTAREA') {
+                      savedActiveElementRef.current.focus();
+                    }
+                    savedActiveElementRef.current = null;
+                  }, 0);
                 }}
-                className="w-full px-4 py-3 text-left text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-3"
+                disabled={isAiLoading}
+                className="w-full px-4 py-3 text-left text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -175,7 +275,7 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
                   </svg>
                   <PiSigma size={16} />
                 </div>
-                <span className="text-sm">{t('tooltips.imageToLatex')}</span>
+                <span className="text-sm">Изображение в LaTeX</span>
               </button>
             </div>
           )}
@@ -188,7 +288,18 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
           <div className="relative flex items-center">
             <button
               type="button"
-              onClick={onMagicWand}
+              data-magic-wand-button="true"
+              onMouseDown={(e) => {
+                // Сохраняем выделение ДО того, как произойдет blur
+                // preventDefault предотвращает потерю фокуса
+                e.preventDefault()
+                onSaveSelection?.()
+                
+                // Используем requestAnimationFrame для обработки после сохранения выделения
+                requestAnimationFrame(() => {
+                  onMagicWand?.()
+                })
+              }}
               disabled={isAiLoading}
               className="p-2.5 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative disabled:opacity-50 disabled:cursor-not-allowed"
               data-tooltip={t('tooltips.aiImproveText')}

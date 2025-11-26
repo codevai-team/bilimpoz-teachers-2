@@ -11,6 +11,7 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs'
 import { Icons } from '@/components/ui/Icons'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAI } from '@/hooks/useAI'
 import { 
   isTempId, 
   getDraftTest, 
@@ -29,6 +30,10 @@ import {
   removeDuplicateQuestions,
   removeQuestionFromTest,
   clearTestFromLocalStorage,
+  clearSavedQuestionsFromLocalStorage,
+  getTempQuestions,
+  getMinAnswersCountForType,
+  getMaxAnswersCountForType,
   type QuestionType,
   type QuestionData
 } from '@/lib/test-storage'
@@ -103,6 +108,19 @@ export default function TestEditorPage() {
   const [errors, setErrors] = useState<TestFormErrors>({})
   const [showAIExplanation, setShowAIExplanation] = useState<Record<string, boolean>>({})
   const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({})
+  const [aiLoadingStates, setAiLoadingStates] = useState<Record<string, boolean>>({})
+  const [savedSelection, setSavedSelection] = useState<{
+    questionId: string | null
+    fieldType: 'question' | 'answer' | null
+    answerIndex: number | null
+    start: number
+    end: number
+    text: string
+  } | null>(null)
+  
+  // AI хук для конвертации изображения
+  const { convertImageToLatex, isLoading: isAiConverting } = useAI()
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const formatHandlersRef = useRef<Record<string, (format: string) => void>>({})
   const [toast, setToast] = useState<{ isOpen: boolean; message: string; variant: ToastVariant }>({
@@ -165,23 +183,340 @@ export default function TestEditorPage() {
   }
 
   const handleOpenImageLatex = () => {
-    // Обработка конвертации изображения в LaTeX
-    console.log('Open image to LaTeX')
+    // Открываем диалог выбора файла
+    if (imageInputRef.current) {
+      imageInputRef.current.click()
+    }
+  }
+
+  const handleImageFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      // Восстанавливаем фокус, даже если файл не выбран
+      restoreFocusToActiveField()
+      return
+    }
+
+    // Сохраняем активное поле перед обработкой
+    const activeElementBefore = document.activeElement as HTMLElement
+    const savedTextarea = activeElementBefore && activeElementBefore.tagName === 'TEXTAREA' 
+      ? activeElementBefore as HTMLTextAreaElement 
+      : null
+
+    // Проверяем тип файла
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Неподдерживаемый тип файла. Используйте JPEG, PNG, GIF или WebP')
+      restoreFocusToActiveField(savedTextarea)
+      return
+    }
+
+    // Проверяем размер файла (максимум 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert('Размер файла превышает 5MB')
+      restoreFocusToActiveField(savedTextarea)
+      return
+    }
+
+    try {
+      console.log('🖼️ Начинаем конвертацию изображения в LaTeX...')
+      
+      // Конвертируем изображение в LaTeX
+      const latexCode = await convertImageToLatex(file)
+      
+      if (!latexCode || latexCode.trim() === '') {
+        alert('Не удалось распознать формулу на изображении')
+        restoreFocusToActiveField(savedTextarea)
+        return
+      }
+
+      console.log('✅ LaTeX код получен:', latexCode.substring(0, 50))
+
+      // Используем сохраненное поле или находим активное
+      const textarea = savedTextarea || (document.activeElement && document.activeElement.tagName === 'TEXTAREA' 
+        ? document.activeElement as HTMLTextAreaElement 
+        : null)
+      
+      if (textarea) {
+        const questionId = textarea.closest('[data-question-id]')?.getAttribute('data-question-id')
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        const currentValue = textarea.value
+        
+        // Формируем LaTeX формулу (блочная формула с $$)
+        const latexFormula = `$$${latexCode}$$`
+        const newValue = currentValue.substring(0, start) + latexFormula + currentValue.substring(end)
+        
+        // Определяем тип поля
+        const container = textarea.closest('[data-question-id]')
+        const questionTextarea = container?.querySelector('textarea:not([data-answer-index])')
+        const isQuestionTextarea = textarea === questionTextarea
+        const answerIndexAttr = textarea.getAttribute('data-answer-index')
+        const answerIndex = answerIndexAttr !== null ? parseInt(answerIndexAttr) : null
+        
+        // Вставляем текст в textarea
+        textarea.value = newValue
+        
+        // Устанавливаем курсор после вставленной формулы
+        const newPosition = start + latexFormula.length
+        textarea.setSelectionRange(newPosition, newPosition)
+        
+        // Триггерим события для обновления состояния React
+        const inputEvent = new Event('input', { bubbles: true })
+        const changeEvent = new Event('change', { bubbles: true })
+        textarea.dispatchEvent(inputEvent)
+        textarea.dispatchEvent(changeEvent)
+        
+        // Если есть форматтер, обновляем через него для синхронизации состояния
+        if (questionId && formatHandlersRef.current[questionId]) {
+          // Используем специальную команду для вставки текста
+          // Используем JSON для безопасной передачи данных
+          if (isQuestionTextarea) {
+            // Обновляем вопрос
+            formatHandlersRef.current[questionId](`insert-text:${JSON.stringify(newValue)}`)
+          } else if (answerIndex !== null) {
+            // Обновляем ответ
+            formatHandlersRef.current[questionId](`insert-answer-text:${answerIndex}:${JSON.stringify(newValue)}`)
+          }
+        }
+        
+        // Фокусируем обратно на textarea
+        setTimeout(() => {
+          textarea.focus()
+          textarea.setSelectionRange(newPosition, newPosition)
+        }, 0)
+        
+        showToast('Формула успешно вставлена', 'success')
+        // Восстанавливаем фокус после успешной вставки
+        restoreFocusToActiveField(textarea)
+      } else {
+        alert('Выберите поле для вставки формулы')
+        restoreFocusToActiveField()
+      }
+    } catch (error) {
+      console.error('❌ Ошибка конвертации изображения:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка'
+      alert(`Ошибка при конвертации изображения: ${errorMessage}`)
+      restoreFocusToActiveField()
+    } finally {
+      // Очищаем input
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''
+      }
+    }
+  }
+
+  // Функция для восстановления фокуса на активном поле
+  const restoreFocusToActiveField = (savedTextarea?: HTMLTextAreaElement | null) => {
+    setTimeout(() => {
+      // Пытаемся найти активное textarea
+      const activeElement = savedTextarea || (document.activeElement && document.activeElement.tagName === 'TEXTAREA'
+        ? document.activeElement as HTMLTextAreaElement
+        : null)
+      
+      if (!activeElement) {
+        // Ищем последний активный textarea на странице
+        const allTextareas = document.querySelectorAll('textarea')
+        if (allTextareas.length > 0) {
+          const lastTextarea = allTextareas[allTextareas.length - 1] as HTMLTextAreaElement
+          lastTextarea.focus()
+        }
+      } else {
+        activeElement.focus()
+      }
+    }, 100)
+  }
+
+  const handleExplainQuestion = () => {
+    // Находим активный вопрос и генерируем объяснение
+    if (selectedQuestionId) {
+      const questionData = loadQuestionDraft(selectedQuestionId, questions.find(q => q.id === selectedQuestionId)?.type || 'standard')
+      
+      if (!questionData || !questionData.question) {
+        alert('Сначала заполните вопрос')
+        return
+      }
+
+      if (!questionData.answers || questionData.answers.length < 2) {
+        alert('Добавьте минимум 2 варианта ответа')
+        return
+      }
+
+      const hasCorrectAnswer = questionData.answers.some(a => a.isCorrect)
+      if (!hasCorrectAnswer) {
+        alert('Выберите правильный ответ')
+        return
+      }
+
+      // Вызываем генерацию объяснения
+      handleRegenerateExplanation(selectedQuestionId)
+    } else {
+      alert('Выберите вопрос для объяснения')
+    }
+  }
+
+  const handleRegenerateExplanation = async (questionId: string) => {
+    const question = questions.find(q => q.id === questionId)
+    if (!question) return
+
+    try {
+      const questionData = loadQuestionDraft(questionId, question.type)
+      if (!questionData) return
+
+      const response = await fetch('/api/ai/explain-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionData: {
+            question: questionData.question,
+            answers: questionData.answers,
+            imageUrl: questionData.imageUrl
+          },
+          courseLanguage: testLanguage,
+          testType: question.type
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Ошибка генерации объяснения')
+      }
+
+      const data = await response.json()
+      const newExplanation = data.explanation
+
+      // Сохраняем объяснение
+      setAiExplanations(prev => ({
+        ...prev,
+        [questionId]: newExplanation
+      }))
+
+      // Обновляем данные вопроса
+      questionData.explanation_ai = newExplanation
+      saveQuestionDraft(questionId, question.type, questionData)
+
+      // Показываем объяснение
+      setShowAIExplanation(prev => ({
+        ...prev,
+        [questionId]: true
+      }))
+
+    } catch (error) {
+      console.error('Ошибка генерации объяснения:', error)
+      alert('Ошибка при генерации объяснения')
+    }
+  }
+
+  // Сохранение выделения перед кликом на кнопку (синхронно, до потери фокуса)
+  const handleSaveSelection = () => {
+    // Проверяем все textarea на странице, чтобы найти активное выделение
+    const allTextareas = document.querySelectorAll('textarea')
+    
+    for (const textarea of allTextareas) {
+      const htmlTextarea = textarea as HTMLTextAreaElement
+      const start = htmlTextarea.selectionStart
+      const end = htmlTextarea.selectionEnd
+      
+      // Если есть выделение в этом textarea
+      if (start !== end) {
+        const selectedText = htmlTextarea.value.substring(start, end).trim()
+        
+        if (selectedText) {
+          const questionId = htmlTextarea.closest('[data-question-id]')?.getAttribute('data-question-id') ||
+                            htmlTextarea.closest('[data-test-question-id]')?.getAttribute('data-test-question-id')
+          
+          const answerIndexAttr = htmlTextarea.getAttribute('data-answer-index')
+          const answerIndex = answerIndexAttr !== null ? parseInt(answerIndexAttr) : null
+          
+          // Определяем тип поля
+          const container = htmlTextarea.closest('[data-question-id]')
+          const questionTextarea = container?.querySelector('textarea:not([data-answer-index])')
+          const isQuestionTextarea = htmlTextarea === questionTextarea
+          
+          if (questionId) {
+            setSavedSelection({
+              questionId,
+              fieldType: isQuestionTextarea ? 'question' : (answerIndex !== null ? 'answer' : null),
+              answerIndex,
+              start,
+              end,
+              text: selectedText
+            })
+            console.log('💾 Выделение сохранено синхронно:', { questionId, fieldType: isQuestionTextarea ? 'question' : 'answer', answerIndex, start, end, text: selectedText.substring(0, 50) })
+            return // Сохранили, выходим
+          }
+        }
+      }
+    }
+    
+    console.log('⚠️ Выделение не найдено для сохранения')
   }
 
   const handleMagicWand = () => {
-    // Находим активный textarea и вызываем улучшение текста
+    console.log('🔮 handleMagicWand вызван из page.tsx')
+    
+    // Используем сохраненное выделение, если оно есть
+    if (savedSelection && savedSelection.questionId && savedSelection.fieldType) {
+      console.log('📋 Используем сохраненное выделение:', savedSelection)
+      
+      if (formatHandlersRef.current[savedSelection.questionId]) {
+        console.log('✅ Вызываем форматтер для questionId:', savedSelection.questionId)
+        // Вызываем улучшение через форматтер с сохраненными данными
+        formatHandlersRef.current[savedSelection.questionId]('magic-wand')
+        // Очищаем сохраненное выделение
+        setSavedSelection(null)
+        return
+      }
+    }
+    
+    // Fallback: пытаемся найти активный textarea
     const activeElement = document.activeElement
+    console.log('📋 Активный элемент:', { tagName: activeElement?.tagName, id: activeElement?.id })
+    
     if (activeElement && activeElement.tagName === 'TEXTAREA') {
       const textarea = activeElement as HTMLTextAreaElement
-      const questionId = textarea.closest('[data-question-id]')?.getAttribute('data-question-id')
-      const answerIndex = textarea.getAttribute('data-answer-index')
+      
+      // Проверяем, есть ли выделенный текст в textarea
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const selectedText = textarea.value.substring(start, end).trim()
+      
+      console.log('✂️ Выделение в textarea:', { start, end, selectedText: selectedText.substring(0, 50), length: selectedText.length })
+      
+      if (!selectedText || start === end) {
+        alert('Выделите текст, который нужно улучшить')
+        return
+      }
+
+      // Находим questionId из ближайшего родителя
+      const questionId = textarea.closest('[data-question-id]')?.getAttribute('data-question-id') ||
+                        textarea.closest('[data-test-question-id]')?.getAttribute('data-test-question-id')
+      
+      console.log('🔍 Поиск questionId:', { 
+        questionId, 
+        registeredHandlers: Object.keys(formatHandlersRef.current),
+        hasHandler: questionId ? !!formatHandlersRef.current[questionId] : false
+      })
       
       if (questionId && formatHandlersRef.current[questionId]) {
+        console.log('✅ Вызываем форматтер для questionId:', questionId)
         // Вызываем улучшение через форматтер
-        // Форматтер определит, это вопрос или ответ, и вызовет handleMagicWand
         formatHandlersRef.current[questionId]('magic-wand')
+      } else {
+        console.error('❌ QuestionId не найден или форматтер не зарегистрирован', { 
+          questionId, 
+          handlers: Object.keys(formatHandlersRef.current),
+          activeElement: activeElement.tagName,
+          parent: textarea.closest('[data-question-id]')?.getAttribute('data-question-id')
+        })
+        alert('Ошибка: не удалось найти активный вопрос. Убедитесь, что вы находитесь в поле вопроса или ответа.')
       }
+    } else {
+      console.error('❌ Активный элемент не является textarea', { activeElement: activeElement?.tagName })
+      alert('Выберите поле для улучшения текста')
     }
   }
 
@@ -314,8 +649,12 @@ export default function TestEditorPage() {
           }
         } else {
           // Загрузка из БД
-          // Сначала очищаем localStorage от возможных устаревших данных
-          clearTestFromLocalStorage(testId)
+          // Сохраняем временные вопросы перед очисткой
+          const tempQuestions = getTempQuestions(testId)
+          console.log(`Найдено ${tempQuestions.length} временных вопросов перед загрузкой из БД`)
+          
+          // Очищаем только сохраненные вопросы, оставляя временные
+          clearSavedQuestionsFromLocalStorage(testId)
           
           const response = await fetch(`/api/teacher/tests/${testId}`)
           const result = await response.json()
@@ -335,8 +674,7 @@ export default function TestEditorPage() {
             if (questionsResult.success && questionsResult.data && questionsResult.data.length > 0) {
               console.log(`Начальная загрузка: ${questionsResult.data.length} вопросов из БД для теста ${testId}`)
               
-              // ПОЛНОСТЬЮ очищаем localStorage для этого теста перед загрузкой из БД
-              clearTestFromLocalStorage(testId)
+              // Временные вопросы уже сохранены выше, теперь можем очистить сохраненные
               
               const dbQuestions: Question[] = []
               
@@ -366,19 +704,41 @@ export default function TestEditorPage() {
                 addQuestionToTestDraft(testId, dbQuestion.id, dbQuestion.type)
               }
 
-              setQuestions(dbQuestions)
+              // Объединяем вопросы из БД с временными вопросами
+              const allQuestions: Question[] = [...dbQuestions]
+              
+              // Добавляем временные вопросы
+              for (const tempQuestion of tempQuestions) {
+                allQuestions.push({
+                  id: tempQuestion.id,
+                  type: tempQuestion.type,
+                  question: tempQuestion.data.question || ''
+                })
+              }
+              
+              setQuestions(allQuestions)
               setOriginalQuestionsFromDB([...dbQuestions]) // Сохраняем исходные вопросы из БД
-              if (dbQuestions.length > 0 && !selectedQuestionId) {
-                setSelectedQuestionId(dbQuestions[0].id)
+              if (allQuestions.length > 0 && !selectedQuestionId) {
+                setSelectedQuestionId(allQuestions[0].id)
               }
             } else {
-              // Если вопросов в БД нет, очищаем состояние
-              setQuestions([])
-              setOriginalQuestionsFromDB([])
-              setSelectedQuestionId(null)
+              // Если вопросов в БД нет, показываем только временные вопросы
+              const tempOnlyQuestions: Question[] = []
               
-              // Также очищаем localStorage от устаревших данных
-              clearTestFromLocalStorage(testId)
+              // Добавляем временные вопросы
+              for (const tempQuestion of tempQuestions) {
+                tempOnlyQuestions.push({
+                  id: tempQuestion.id,
+                  type: tempQuestion.type,
+                  question: tempQuestion.data.question || ''
+                })
+              }
+              
+              setQuestions(tempOnlyQuestions)
+              setOriginalQuestionsFromDB([])
+              if (tempOnlyQuestions.length > 0 && !selectedQuestionId) {
+                setSelectedQuestionId(tempOnlyQuestions[0].id)
+              }
             }
           } else {
             console.error('Ошибка загрузки теста:', result.error)
@@ -493,18 +853,23 @@ export default function TestEditorPage() {
 
     try {
       console.log('Перезагружаем вопросы из БД...')
+      
+      // Сохраняем временные вопросы перед перезагрузкой
+      const tempQuestions = getTempQuestions(testId)
+      console.log(`Найдено ${tempQuestions.length} временных вопросов перед перезагрузкой`)
+      
       const response = await fetch(`/api/teacher/tests/${testId}/questions`)
       const result = await response.json()
 
       if (result.success && result.data) {
         console.log(`Перезагружено ${result.data.length} вопросов из БД для теста ${testId}`)
         
-        // ПОЛНОСТЬЮ очищаем localStorage для этого теста
-        clearTestFromLocalStorage(testId)
+        // Очищаем только сохраненные вопросы, оставляя временные
+        clearSavedQuestionsFromLocalStorage(testId)
         
         const dbQuestions: Question[] = []
         
-        // Сохраняем каждый вопрос в localStorage и добавляем в список
+        // Сохраняем каждый вопрос из БД в localStorage и добавляем в список
         for (const dbQuestion of result.data) {
           // Сохраняем данные вопроса в localStorage
           saveQuestionDraft(dbQuestion.id, dbQuestion.type, {
@@ -530,19 +895,43 @@ export default function TestEditorPage() {
           addQuestionToTestDraft(testId, dbQuestion.id, dbQuestion.type)
         }
 
-        setQuestions(dbQuestions)
+        // Объединяем вопросы из БД с временными вопросами
+        const allQuestions: Question[] = [...dbQuestions]
+        
+        // Добавляем временные вопросы
+        for (const tempQuestion of tempQuestions) {
+          allQuestions.push({
+            id: tempQuestion.id,
+            type: tempQuestion.type,
+            question: tempQuestion.data.question || ''
+          })
+        }
+
+        setQuestions(allQuestions)
         setOriginalQuestionsFromDB([...dbQuestions]) // Обновляем исходные вопросы
         
         // Если был выбранный вопрос, но его больше нет, сбрасываем выбор
-        if (selectedQuestionId && !dbQuestions.find(q => q.id === selectedQuestionId)) {
-          setSelectedQuestionId(dbQuestions.length > 0 ? dbQuestions[0].id : null)
+        if (selectedQuestionId && !allQuestions.find(q => q.id === selectedQuestionId)) {
+          setSelectedQuestionId(allQuestions.length > 0 ? allQuestions[0].id : null)
         }
       } else {
-        // Если вопросов нет в БД, очищаем все
-        setQuestions([])
+        // Если вопросов нет в БД, показываем только временные вопросы
+        const tempOnlyQuestions: Question[] = []
+        
+        // Добавляем временные вопросы
+        for (const tempQuestion of tempQuestions) {
+          tempOnlyQuestions.push({
+            id: tempQuestion.id,
+            type: tempQuestion.type,
+            question: tempQuestion.data.question || ''
+          })
+        }
+        
+        setQuestions(tempOnlyQuestions)
         setOriginalQuestionsFromDB([])
-        setSelectedQuestionId(null)
-        clearTestFromLocalStorage(testId)
+        if (tempOnlyQuestions.length > 0 && selectedQuestionId && !tempOnlyQuestions.find(q => q.id === selectedQuestionId)) {
+          setSelectedQuestionId(tempOnlyQuestions[0].id)
+        }
       }
     } catch (error) {
       console.error('Ошибка перезагрузки вопросов из БД:', error)
@@ -556,14 +945,19 @@ export default function TestEditorPage() {
     try {
       // Очищаем дубликаты перед загрузкой
       removeDuplicateQuestions(testId)
+      
+      // Сохраняем временные вопросы перед загрузкой
+      const tempQuestions = getTempQuestions(testId)
+      console.log(`Найдено ${tempQuestions.length} временных вопросов перед загрузкой из БД`)
+      
       const response = await fetch(`/api/teacher/tests/${testId}/questions`)
       const result = await response.json()
 
       if (result.success && result.data) {
         console.log(`Загружаем ${result.data.length} вопросов из БД для теста ${testId}`)
         
-        // ПОЛНОСТЬЮ очищаем localStorage для этого теста
-        clearTestFromLocalStorage(testId)
+        // Очищаем только сохраненные вопросы, оставляя временные
+        clearSavedQuestionsFromLocalStorage(testId)
         
         const dbQuestions: Question[] = []
         
@@ -593,10 +987,40 @@ export default function TestEditorPage() {
           addQuestionToTestDraft(testId, dbQuestion.id, dbQuestion.type)
         }
 
-        setQuestions(dbQuestions)
+        // Объединяем вопросы из БД с временными вопросами
+        const allQuestions: Question[] = [...dbQuestions]
+        
+        // Добавляем временные вопросы
+        for (const tempQuestion of tempQuestions) {
+          allQuestions.push({
+            id: tempQuestion.id,
+            type: tempQuestion.type,
+            question: tempQuestion.data.question || ''
+          })
+        }
+
+        setQuestions(allQuestions)
         setOriginalQuestionsFromDB([...dbQuestions]) // Сохраняем исходные вопросы из БД
-        if (dbQuestions.length > 0 && !selectedQuestionId) {
-          setSelectedQuestionId(dbQuestions[0].id)
+        if (allQuestions.length > 0 && !selectedQuestionId) {
+          setSelectedQuestionId(allQuestions[0].id)
+        }
+      } else {
+        // Если вопросов нет в БД, показываем только временные вопросы
+        const tempOnlyQuestions: Question[] = []
+        
+        // Добавляем временные вопросы
+        for (const tempQuestion of tempQuestions) {
+          tempOnlyQuestions.push({
+            id: tempQuestion.id,
+            type: tempQuestion.type,
+            question: tempQuestion.data.question || ''
+          })
+        }
+        
+        setQuestions(tempOnlyQuestions)
+        setOriginalQuestionsFromDB([])
+        if (tempOnlyQuestions.length > 0 && !selectedQuestionId) {
+          setSelectedQuestionId(tempOnlyQuestions[0].id)
         }
       }
     } catch (error) {
@@ -608,50 +1032,31 @@ export default function TestEditorPage() {
   const isQuestionModified = (question: Question, questionData: any) => {
     // Для новых вопросов всегда считаем измененными
     if (isTempId(question.id)) {
-      console.log(`Вопрос ${question.id} - новый (temp ID)`)
       return true
     }
 
     // Ищем исходный вопрос в БД
     const originalQuestion = originalQuestionsFromDB.find(q => q.id === question.id)
     if (!originalQuestion) {
-      console.log(`Вопрос ${question.id} - не найден в исходных данных`)
       return true // Если не найден в исходных данных, считаем измененным
     }
 
-    console.log(`Сравниваем вопрос ${question.id}:`)
-    console.log('Текущий текст:', questionData.question?.trim())
-    console.log('Исходный текст:', originalQuestion.question?.trim())
-    
     // Сравниваем основные поля
     if (questionData.question?.trim() !== originalQuestion.question?.trim()) {
-      console.log(`Вопрос ${question.id} - изменился текст вопроса`)
       return true
     }
 
-    console.log('Текущие баллы:', questionData.points || 1)
-    console.log('Исходные баллы:', originalQuestion.points || 1)
-    
     // Сравниваем баллы и время
     if ((questionData.points || 1) !== (originalQuestion.points || 1)) {
-      console.log(`Вопрос ${question.id} - изменились баллы`)
       return true
     }
-
-    console.log('Текущее время:', questionData.timeLimit || 60)
-    console.log('Исходное время:', originalQuestion.timeLimit || 60)
 
     if ((questionData.timeLimit || 60) !== (originalQuestion.timeLimit || 60)) {
-      console.log(`Вопрос ${question.id} - изменилось время`)
       return true
     }
-
-    console.log('Текущее изображение:', questionData.imageUrl || '')
-    console.log('Исходное изображение:', originalQuestion.photoUrl || '')
 
     // Сравниваем изображение
     if ((questionData.imageUrl || '') !== (originalQuestion.photoUrl || '')) {
-      console.log(`Вопрос ${question.id} - изменилось изображение`)
       return true
     }
 
@@ -659,11 +1064,7 @@ export default function TestEditorPage() {
     const currentAnswers = questionData.answers?.filter((a: any) => a.value && a.value.trim()) || []
     const originalAnswers = originalQuestion.answerVariants || []
 
-    console.log('Текущие ответы:', currentAnswers.length, currentAnswers)
-    console.log('Исходные ответы:', originalAnswers.length, originalAnswers)
-
     if (currentAnswers.length !== originalAnswers.length) {
-      console.log(`Вопрос ${question.id} - изменилось количество ответов`)
       return true
     }
 
@@ -672,17 +1073,14 @@ export default function TestEditorPage() {
       const original = originalAnswers[i]
       
       if (current.value?.trim() !== original.value?.trim()) {
-        console.log(`Вопрос ${question.id} - изменился ответ ${i}: "${current.value?.trim()}" !== "${original.value?.trim()}"`)
         return true
       }
       
       if (current.isCorrect !== original.isCorrect) {
-        console.log(`Вопрос ${question.id} - изменилась правильность ответа ${i}`)
         return true
       }
     }
 
-    console.log(`Вопрос ${question.id} - НЕ ИЗМЕНИЛСЯ`)
     return false // Вопрос не изменился
   }
 
@@ -704,6 +1102,7 @@ export default function TestEditorPage() {
     let newQuestionsCount = 0
     let updatedQuestionsCount = 0
     let errorCount = 0
+    let validationErrors: string[] = []
 
     try {
       // Сначала удаляем вопросы, которые были удалены из интерфейса
@@ -751,8 +1150,11 @@ export default function TestEditorPage() {
           }
 
           // Валидация данных вопроса
+          const questionNumber = questions.findIndex(q => q.id === question.id) + 1
+          
           if (!questionData.question || !questionData.question.trim()) {
             console.warn(`Вопрос ${question.id} не заполнен`)
+            validationErrors.push(`Вопрос ${questionNumber}: Текст вопроса не заполнен`)
             errorCount++
             continue
           }
@@ -760,6 +1162,7 @@ export default function TestEditorPage() {
           const validAnswers = questionData.answers?.filter(a => a.value && a.value.trim()) || []
           if (validAnswers.length < 2) {
             console.warn(`Вопрос ${question.id} имеет менее 2 вариантов ответа`)
+            validationErrors.push(`Вопрос ${questionNumber}: Необходимо минимум 2 варианта ответа`)
             errorCount++
             continue
           }
@@ -767,6 +1170,7 @@ export default function TestEditorPage() {
           const hasCorrectAnswer = validAnswers.some(a => a.isCorrect)
           if (!hasCorrectAnswer) {
             console.warn(`Вопрос ${question.id} не имеет правильного ответа`)
+            validationErrors.push(`Вопрос ${questionNumber}: Не выбран правильный ответ`)
             errorCount++
             continue
           }
@@ -888,6 +1292,10 @@ export default function TestEditorPage() {
         showToast(message, errorCount > 0 ? 'warning' : 'success')
         setHasUnsavedChanges(false)
         
+        // Очищаем localStorage после успешного сохранения
+        console.log('Очищаем localStorage после успешного сохранения вопросов')
+        clearTestFromLocalStorage(testId)
+        
         // Перезагружаем актуальные данные из БД после успешного сохранения
         console.log('Вопросы успешно сохранены/удалены, перезагружаем из БД')
         await reloadQuestionsFromDB()
@@ -895,10 +1303,16 @@ export default function TestEditorPage() {
         // Принудительно обновляем страницу для гарантии отображения актуальных данных
         window.location.reload()
       } else if (errorCount > 0) {
-        showToast(
-          getText('tests.saveQuestionsError', `Ошибка при сохранении вопросов: ${errorCount}`),
-          'error'
-        )
+        // Показываем конкретные ошибки валидации
+        if (validationErrors.length > 0) {
+          const errorMessage = validationErrors.join('\n')
+          showToast(errorMessage, 'error')
+        } else {
+          showToast(
+            getText('tests.saveQuestionsError', `Ошибка при сохранении вопросов: ${errorCount}`),
+            'error'
+          )
+        }
       }
     } catch (error) {
       console.error('Ошибка при сохранении вопросов:', error)
@@ -1138,6 +1552,12 @@ export default function TestEditorPage() {
                       aiExplanation={aiExplanations[question.id] || ''}
                       isPreviewMode={isPreviewMode}
                       onFormatRegister={(handler) => handleRegisterFormat(question.id, handler)}
+                      onAiLoadingChange={(questionId, isLoading) => {
+                        setAiLoadingStates(prev => ({
+                          ...prev,
+                          [questionId]: isLoading
+                        }))
+                      }}
                       onRegenerateExplanation={async () => {
                         // Вызываем регенерацию через TestAIExplainButton
                         // Для этого нужно найти кнопку и вызвать её метод генерации
@@ -1260,6 +1680,18 @@ export default function TestEditorPage() {
             onTogglePreview={handleTogglePreview}
             onImageToLatex={handleOpenImageLatex}
             onMagicWand={handleMagicWand}
+            onSaveSelection={handleSaveSelection}
+            onExplainQuestion={handleExplainQuestion}
+            isAiLoading={selectedQuestionId ? (aiLoadingStates[selectedQuestionId] || false) : false || isAiConverting}
+          />
+          
+          {/* Скрытый input для выбора изображения */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            onChange={handleImageFileSelected}
+            style={{ display: 'none' }}
           />
         </div>
       )}
