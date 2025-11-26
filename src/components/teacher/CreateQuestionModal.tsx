@@ -637,7 +637,7 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
                       del: ({ children }) => <del className="text-[var(--text-primary)] line-through">{children}</del>,
                       s: ({ children }) => <s className="text-[var(--text-primary)] line-through">{children}</s>,
                       // Стили для LaTeX формул
-                      code: ({ inline, children, ...props }) => {
+                      code: ({ inline, children, ...props }: { inline?: boolean; children?: React.ReactNode; [key: string]: any }) => {
                         if (inline) {
                           return <code className="text-[var(--text-primary)] bg-[var(--bg-card)] px-1 py-0.5 rounded" {...props}>{children}</code>
                         }

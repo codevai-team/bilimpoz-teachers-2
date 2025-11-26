@@ -10,13 +10,14 @@ interface TooltipProps {
 
 const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
   const [isVisible, setIsVisible] = useState(false)
+  const [isPositioned, setIsPositioned] = useState(false)
   const [position, setPosition] = useState<'top' | 'bottom'>('top')
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({})
   const tooltipRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (isVisible && triggerRef.current) {
+    if (isVisible && triggerRef.current && tooltipRef.current) {
       const updatePosition = () => {
         if (!triggerRef.current || !tooltipRef.current) return
 
@@ -25,7 +26,8 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
         const spaceAbove = triggerRect.top
         const spaceBelow = window.innerHeight - triggerRect.bottom
 
-        const isTop = spaceBelow < tooltipRect.height && spaceAbove > spaceBelow
+        // По умолчанию показываем сверху, если места достаточно (минимум 50px)
+        const isTop = spaceAbove >= tooltipRect.height + 10 || spaceAbove > spaceBelow
         setPosition(isTop ? 'top' : 'bottom')
 
         // Позиционирование относительно триггера
@@ -41,12 +43,15 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
           transform: 'translateX(-50%)',
           zIndex: 99999
         })
+        
+        // Показываем tooltip после позиционирования
+        if (!isPositioned) {
+          setIsPositioned(true)
+        }
       }
 
-      // Используем requestAnimationFrame для правильного позиционирования после рендера
-      requestAnimationFrame(() => {
-        requestAnimationFrame(updatePosition)
-      })
+      // Сначала позиционируем, потом показываем
+      updatePosition()
 
       // Обновляем позицию при скролле и изменении размера окна
       window.addEventListener('scroll', updatePosition, true)
@@ -56,8 +61,10 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
         window.removeEventListener('scroll', updatePosition, true)
         window.removeEventListener('resize', updatePosition)
       }
+    } else if (!isVisible) {
+      setIsPositioned(false)
     }
-  }, [isVisible])
+  }, [isVisible, isPositioned])
 
   return (
     <>
@@ -78,18 +85,41 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
             shadow-xl
             text-[var(--text-primary)] text-xs whitespace-nowrap
             pointer-events-none
+            transition-opacity duration-100
           `}
-          style={tooltipStyle}
+          style={{
+            ...tooltipStyle,
+            opacity: isPositioned ? 1 : 0,
+            visibility: isPositioned ? 'visible' : 'hidden'
+          }}
         >
           {text}
-          {/* Треугольный указатель */}
+          {/* Треугольный указатель с бордером */}
+          {/* Внешний треугольник (бордер) */}
+          <div
+            className={`
+              absolute left-1/2 transform -translate-x-1/2
+              w-0 h-0 border-[5px] border-transparent
+              ${position === 'top' 
+                ? 'top-full' 
+                : 'bottom-full'
+              }
+            `}
+            style={{
+              borderTopColor: position === 'top' ? 'var(--border-primary)' : 'transparent',
+              borderBottomColor: position === 'bottom' ? 'var(--border-primary)' : 'transparent',
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+            }}
+          />
+          {/* Внутренний треугольник (фон) */}
           <div
             className={`
               absolute left-1/2 transform -translate-x-1/2
               w-0 h-0 border-4 border-transparent
               ${position === 'top' 
-                ? 'top-full' 
-                : 'bottom-full'
+                ? 'top-full -mt-[1px]' 
+                : 'bottom-full -mb-[1px]'
               }
             `}
             style={{

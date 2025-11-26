@@ -89,7 +89,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#242424] rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors"
           >
             <Icons.X className="h-5 w-5 text-gray-400" />
           </button>

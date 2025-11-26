@@ -117,6 +117,7 @@ export default function TestEditorPage() {
     end: number
     text: string
   } | null>(null)
+  const [questionValidationErrors, setQuestionValidationErrors] = useState<Record<string, string>>({})
   
   // AI хук для конвертации изображения
   const { convertImageToLatex, isLoading: isAiConverting } = useAI()
@@ -140,6 +141,83 @@ export default function TestEditorPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Автоматическая очистка ошибок валидации при исправлении вопросов
+  useEffect(() => {
+    if (!mounted) return
+
+    const checkAndClearErrors = () => {
+      setQuestionValidationErrors(prevErrors => {
+        if (Object.keys(prevErrors).length === 0) return prevErrors
+
+        const updatedErrors: Record<string, string> = {}
+        let hasChanges = false
+
+        for (const [questionId, error] of Object.entries(prevErrors)) {
+          const question = questions.find(q => q.id === questionId)
+          if (!question) {
+            // Вопрос удален, убираем ошибку
+            hasChanges = true
+            continue
+          }
+
+          const questionData = loadQuestionDraft(questionId, question.type)
+          if (!questionData) {
+            // Если ошибка была "Данные вопроса не найдены", оставляем её
+            if (error.includes('Данные вопроса не найдены')) {
+              updatedErrors[questionId] = error
+            } else {
+              // Для других ошибок, если данных нет, убираем ошибку
+              hasChanges = true
+            }
+            continue
+          }
+
+          // Проверяем, исправлена ли ошибка
+          const validAnswers = questionData.answers?.filter(a => a.value && a.value.trim()) || []
+          const hasCorrectAnswer = validAnswers.some(a => a.isCorrect)
+          const hasQuestionText = questionData.question && questionData.question.trim()
+          const hasMinAnswers = validAnswers.length >= 2
+
+          let isFixed = false
+
+          // Проверяем тип ошибки и исправлена ли она
+          if (error.includes('Не выбран правильный ответ')) {
+            isFixed = hasCorrectAnswer && validAnswers.length > 0
+          } else if (error.includes('Текст вопроса не заполнен')) {
+            isFixed = hasQuestionText
+          } else if (error.includes('Необходимо минимум 2 варианта ответа')) {
+            isFixed = hasMinAnswers
+          } else if (error.includes('Данные вопроса не найдены')) {
+            isFixed = !!questionData
+          }
+
+          if (isFixed) {
+            // Ошибка исправлена, не добавляем в updatedErrors
+            hasChanges = true
+          } else {
+            // Ошибка не исправлена, оставляем её
+            updatedErrors[questionId] = error
+          }
+        }
+
+        // Возвращаем обновленные ошибки только если что-то изменилось
+        if (hasChanges) {
+          return updatedErrors
+        }
+        return prevErrors
+      })
+    }
+
+    // Проверяем сразу
+    checkAndClearErrors()
+
+    // Устанавливаем интервал для периодической проверки (каждые 500мс)
+    const interval = setInterval(checkAndClearErrors, 500)
+
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, questions])
 
   // Fallback значения для предотвращения ошибок гидратации
   const getText = (key: string, fallback: string) => {
@@ -1084,6 +1162,31 @@ export default function TestEditorPage() {
     return false // Вопрос не изменился
   }
 
+  // Проверка валидности всех вопросов (есть ли правильный ответ)
+  const validateAllQuestions = (): boolean => {
+    if (questions.length === 0) return true
+    
+    // Если есть ошибки валидации, кнопка должна быть отключена
+    if (Object.keys(questionValidationErrors).length > 0) {
+      return false
+    }
+    
+    for (const question of questions) {
+      const questionData = loadQuestionDraft(question.id, question.type)
+      if (!questionData) continue
+      
+      const validAnswers = questionData.answers?.filter(a => a.value && a.value.trim()) || []
+      if (validAnswers.length > 0) {
+        const hasCorrectAnswer = validAnswers.some(a => a.isCorrect)
+        if (!hasCorrectAnswer) {
+          return false // Найден вопрос без правильного ответа
+        }
+      }
+    }
+    
+    return true // Все вопросы валидны
+  }
+
   // Сохранение всех вопросов в БД
   const handleSaveQuestions = async () => {
     if (!test || !user?.id || questions.length === 0) {
@@ -1094,6 +1197,61 @@ export default function TestEditorPage() {
     // Проверяем, что тест не временный (должен быть сохранен в БД)
     if (isTempId(testId)) {
       showToast(getText('tests.saveTestFirst', 'Сначала сохраните тест в настройках'), 'error')
+      return
+    }
+
+    // Очищаем предыдущие ошибки валидации
+    setQuestionValidationErrors({})
+    
+    // Сначала проверяем все вопросы на валидность
+    const validationErrorsMap: Record<string, string> = {}
+    let hasValidationErrors = false
+
+    for (const question of questions) {
+      const questionData = loadQuestionDraft(question.id, question.type)
+      
+      if (!questionData) {
+        const questionNumber = questions.findIndex(q => q.id === question.id) + 1
+        validationErrorsMap[question.id] = `Вопрос ${questionNumber}: Данные вопроса не найдены`
+        hasValidationErrors = true
+        continue
+      }
+
+      const questionNumber = questions.findIndex(q => q.id === question.id) + 1
+      
+      if (!questionData.question || !questionData.question.trim()) {
+        validationErrorsMap[question.id] = `Вопрос ${questionNumber}: Текст вопроса не заполнен`
+        hasValidationErrors = true
+        continue
+      }
+
+      const validAnswers = questionData.answers?.filter(a => a.value && a.value.trim()) || []
+      if (validAnswers.length < 2) {
+        validationErrorsMap[question.id] = `Вопрос ${questionNumber}: Необходимо минимум 2 варианта ответа`
+        hasValidationErrors = true
+        continue
+      }
+
+      const hasCorrectAnswer = validAnswers.some(a => a.isCorrect)
+      if (!hasCorrectAnswer) {
+        validationErrorsMap[question.id] = `Вопрос ${questionNumber}: Не выбран правильный ответ`
+        hasValidationErrors = true
+        continue
+      }
+    }
+
+    // Если есть ошибки валидации, показываем их и не сохраняем
+    if (hasValidationErrors) {
+      setQuestionValidationErrors(validationErrorsMap)
+      // Прокручиваем к первому вопросу с ошибкой
+      const firstErrorQuestionId = Object.keys(validationErrorsMap)[0]
+      if (firstErrorQuestionId) {
+        const errorElement = document.querySelector(`[data-question-id="${firstErrorQuestionId}"]`)
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }
+      showToast(getText('tests.validationErrors', 'Исправьте ошибки в вопросах'), 'error')
       return
     }
 
@@ -1137,46 +1295,22 @@ export default function TestEditorPage() {
         }
       }
 
-      // Сохраняем каждый вопрос
+      // Сохраняем каждый вопрос (валидация уже выполнена выше)
       for (const question of questions) {
         try {
+          // Определяем, новый это вопрос или существующий
+          const isNewQuestion = isTempId(question.id)
+          
           // Получаем данные вопроса из localStorage
           const questionData = loadQuestionDraft(question.id, question.type)
           
           if (!questionData) {
-            console.warn(`Данные вопроса ${question.id} не найдены`)
+            console.warn(`Данные вопроса ${question.id} не найдены в localStorage после валидации`)
+            // Если данные не найдены после валидации, это ошибка
+            // Валидация должна была проверить наличие данных
             errorCount++
             continue
           }
-
-          // Валидация данных вопроса
-          const questionNumber = questions.findIndex(q => q.id === question.id) + 1
-          
-          if (!questionData.question || !questionData.question.trim()) {
-            console.warn(`Вопрос ${question.id} не заполнен`)
-            validationErrors.push(`Вопрос ${questionNumber}: Текст вопроса не заполнен`)
-            errorCount++
-            continue
-          }
-
-          const validAnswers = questionData.answers?.filter(a => a.value && a.value.trim()) || []
-          if (validAnswers.length < 2) {
-            console.warn(`Вопрос ${question.id} имеет менее 2 вариантов ответа`)
-            validationErrors.push(`Вопрос ${questionNumber}: Необходимо минимум 2 варианта ответа`)
-            errorCount++
-            continue
-          }
-
-          const hasCorrectAnswer = validAnswers.some(a => a.isCorrect)
-          if (!hasCorrectAnswer) {
-            console.warn(`Вопрос ${question.id} не имеет правильного ответа`)
-            validationErrors.push(`Вопрос ${questionNumber}: Не выбран правильный ответ`)
-            errorCount++
-            continue
-          }
-
-          // Определяем, новый это вопрос или существующий
-          const isNewQuestion = isTempId(question.id)
           
           // Проверяем, изменился ли вопрос
           const isModified = isQuestionModified(question, questionData)
@@ -1186,6 +1320,9 @@ export default function TestEditorPage() {
             console.log(`Вопрос ${question.id} не изменился, пропускаем`)
             continue
           }
+          
+          // Получаем валидные ответы
+          const validAnswers = questionData.answers?.filter(a => a.value && a.value.trim()) || []
           
           console.log(`Сохраняем вопрос ${question.id}, новый: ${isNewQuestion}, изменен: ${isModified}`)
           
@@ -1262,11 +1399,23 @@ export default function TestEditorPage() {
         }
       }
 
-      const deletedCount = questionsToDelete.length - questionsToDelete.filter((_, index) => {
-        // Считаем только успешно удаленные (те, для которых не было ошибок)
-        return index < questionsToDelete.length
-      }).length
+      // Если есть ошибки, показываем их
+      if (errorCount > 0) {
+        // Показываем конкретные ошибки валидации
+        if (validationErrors.length > 0) {
+          const errorMessage = validationErrors.join('\n')
+          showToast(errorMessage, 'error')
+        } else {
+          showToast(
+            getText('tests.saveQuestionsError', `Ошибка при сохранении вопросов: ${errorCount}`),
+            'error'
+          )
+        }
+        setIsSubmitting(false)
+        return
+      }
 
+      // Если нет ошибок, показываем успешное сообщение
       if (successCount > 0 || questionsToDelete.length > 0) {
         let message = ''
         const messageParts = []
@@ -1283,14 +1432,18 @@ export default function TestEditorPage() {
           messageParts.push(`Удалено вопросов: ${questionsToDelete.length}`)
         }
         
-        if (errorCount > 0) {
-          messageParts.push(`Ошибок: ${errorCount}`)
+        // Если нет изменений, но и нет ошибок, показываем сообщение об успехе
+        if (messageParts.length === 0) {
+          message = getText('tests.questionsSaved', 'Вопросы сохранены успешно')
+        } else {
+          message = messageParts.join(', ')
         }
         
-        message = messageParts.join(', ')
-        
-        showToast(message, errorCount > 0 ? 'warning' : 'success')
+        showToast(message, 'success')
         setHasUnsavedChanges(false)
+        
+        // Очищаем ошибки валидации после успешного сохранения
+        setQuestionValidationErrors({})
         
         // Очищаем localStorage после успешного сохранения
         console.log('Очищаем localStorage после успешного сохранения вопросов')
@@ -1302,17 +1455,10 @@ export default function TestEditorPage() {
         
         // Принудительно обновляем страницу для гарантии отображения актуальных данных
         window.location.reload()
-      } else if (errorCount > 0) {
-        // Показываем конкретные ошибки валидации
-        if (validationErrors.length > 0) {
-          const errorMessage = validationErrors.join('\n')
-          showToast(errorMessage, 'error')
-        } else {
-          showToast(
-            getText('tests.saveQuestionsError', `Ошибка при сохранении вопросов: ${errorCount}`),
-            'error'
-          )
-        }
+      } else {
+        // Если нет изменений и нет ошибок, просто показываем сообщение
+        showToast(getText('tests.noChanges', 'Нет изменений для сохранения'), 'info')
+        setIsSubmitting(false)
       }
     } catch (error) {
       console.error('Ошибка при сохранении вопросов:', error)
@@ -1558,6 +1704,7 @@ export default function TestEditorPage() {
                           [questionId]: isLoading
                         }))
                       }}
+                      validationError={questionValidationErrors[question.id] || null}
                       onRegenerateExplanation={async () => {
                         // Вызываем регенерацию через TestAIExplainButton
                         // Для этого нужно найти кнопку и вызвать её метод генерации
@@ -1639,7 +1786,7 @@ export default function TestEditorPage() {
                 type="button"
                 variant="primary"
                 onClick={handleSaveQuestions}
-                disabled={isSubmitting || isTempId(testId)}
+                disabled={isSubmitting || isTempId(testId) || !validateAllQuestions()}
                 isLoading={isSubmitting}
               >
                 {getText('tests.saveQuestions', 'Сохранить вопросы')}

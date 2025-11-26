@@ -36,7 +36,8 @@ export function useCustomTooltips(container?: HTMLElement | null, language: Lang
     const showTooltip = (element: Element, tooltip: HTMLElement) => {
       const rect = element.getBoundingClientRect()
       tooltip.style.left = `${rect.left + rect.width / 2}px`
-      tooltip.style.top = `${rect.top - 8}px`
+      // Позиционируем tooltip чуть ниже, только чуть выше кнопки
+      tooltip.style.top = `${rect.bottom - 4}px`
       tooltip.style.transform = 'translate(-50%, -100%)'
       tooltip.style.opacity = '1'
     }

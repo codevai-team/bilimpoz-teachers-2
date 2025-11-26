@@ -528,7 +528,7 @@ export default function TestsPage() {
               <div
                 key={test.id}
                 onClick={() => handleOpenTest(test.id)}
-                className="bg-[var(--bg-card)] rounded-xl p-3 cursor-pointer hover:shadow-lg transition-all hover:bg-[#242424]"
+                className="bg-[var(--bg-card)] rounded-xl p-3 cursor-pointer hover:shadow-lg transition-all hover:bg-[var(--bg-hover)]"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">

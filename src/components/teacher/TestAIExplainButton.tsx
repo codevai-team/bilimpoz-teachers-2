@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import { useTranslation } from '@/hooks/useTranslation'
-import { useCustomTooltips } from '@/hooks/useCustomTooltips'
+import Tooltip from '@/components/ui/Tooltip'
 import { loadQuestionDraft, saveQuestionDraft, type QuestionType } from '@/lib/test-storage'
 
 interface AnswerVariant {
@@ -36,12 +36,10 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
   testType = 'standard',
   imageUrl
 }) => {
-  const { t, getCurrentLanguage } = useTranslation()
+  const { t } = useTranslation()
   const [hasExplanation, setHasExplanation] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
-  
-  useCustomTooltips(undefined, getCurrentLanguage())
 
   // Монтирование компонента
   useEffect(() => {
@@ -272,39 +270,40 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isLoading}
-      className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative disabled:opacity-50 disabled:cursor-not-allowed"
-      data-tooltip={getTooltip()}
-    >
-      {isLoading ? (
-        <div className="loader-circle w-7 h-7 flex-shrink-0 flex items-center justify-center">
-          <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : isShowingExplanation ? (
-        <Icons.ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
-      ) : (
-        <svg
-          width="22"
-          height="22"
-          viewBox="-10 -10 562 562"
-          className={`transition-colors ${
-            hasExplanation
-              ? 'text-purple-500'
-              : 'text-gray-400 group-hover:text-purple-400'
-          }`}
-        >
-          <path
-            fill={hasExplanation ? 'currentColor' : 'none'}
-            stroke="currentColor"
-            strokeWidth={hasExplanation ? '0' : '20'}
-            d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"
-          />
-        </svg>
-      )}
-    </button>
+    <Tooltip text={getTooltip()}>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isLoading}
+        className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading ? (
+          <div className="loader-circle w-7 h-7 flex-shrink-0 flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : isShowingExplanation ? (
+          <Icons.ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
+        ) : (
+          <svg
+            width="22"
+            height="22"
+            viewBox="-10 -10 562 562"
+            className={`transition-colors ${
+              hasExplanation
+                ? 'text-purple-500'
+                : 'text-gray-400 group-hover:text-purple-400'
+            }`}
+          >
+            <path
+              fill={hasExplanation ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              strokeWidth={hasExplanation ? '0' : '20'}
+              d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"
+            />
+          </svg>
+        )}
+      </button>
+    </Tooltip>
   )
 }
 

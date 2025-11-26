@@ -33,6 +33,7 @@ interface QuestionEditorProps {
   onFormatRegister?: (handler: (format: string) => void) => void
   onRegenerateExplanation?: () => void
   onAiLoadingChange?: (questionId: string, isLoading: boolean) => void
+  validationError?: string | null
 }
 
 const QuestionEditor: React.FC<QuestionEditorProps> = ({
@@ -47,7 +48,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   isPreviewMode: externalPreviewMode = false,
   onFormatRegister,
   onRegenerateExplanation,
-  onAiLoadingChange
+  onAiLoadingChange,
+  validationError: externalValidationError
 }) => {
   const { t, ready } = useTranslation()
   const [mounted, setMounted] = useState(false)
@@ -282,6 +284,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
     return () => clearTimeout(saveTimer)
   }, [mounted, questionId, questionType, questionText, answers, points, timeLimit, imageUrl, testLanguage, onQuestionUpdate])
+
 
   const getText = (key: string, fallback: string) => {
     if (!mounted || !ready) return fallback
@@ -1042,6 +1045,13 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
 
   return (
     <div className="space-y-6" data-question-id={questionId}>
+      {/* Предупреждение о неправильном ответе */}
+      {externalValidationError && (
+        <div className="p-3 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 text-sm flex items-center gap-2">
+          <Icons.AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{externalValidationError}</span>
+        </div>
+      )}
         {/* Текст вопроса или AI объяснение */}
         <div className={isShowingExplanation ? "flex flex-col h-full min-h-[500px]" : ""}>
         <div className="flex items-center justify-between mb-3">
@@ -1067,6 +1077,19 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               questionNumber ? `Вопрос ${questionNumber}` : getText('tests.questionText', 'Текст вопроса')
             )}
           </label>
+          {/* Кнопка переключения версий вопроса - показывается только если есть версии */}
+          {!isShowingExplanation && textVersions.question && (
+            <button
+              type="button"
+              onClick={() => toggleTextVersion('question')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 rounded-lg transition-colors text-xs font-medium"
+              title={textVersions.question.isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}
+            >
+              <Icons.ArrowLeft className="h-3.5 w-3.5" />
+              <Icons.ArrowRight className="h-3.5 w-3.5 -ml-1" />
+              <span>{textVersions.question.isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}</span>
+            </button>
+          )}
         </div>
           
           {isShowingExplanation ? (
@@ -1140,7 +1163,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                       }}
                       min="1"
                       max="5"
-                      className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
+                      className="w-16 h-8 text-sm px-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
                     />
                   </div>
                   <p className="text-xs text-[var(--text-tertiary)]">
@@ -1176,7 +1199,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                       }}
                       min="1"
                       max="120"
-                      className="w-16 h-8 text-sm px-1 rounded-lg border border-gray-700 bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
+                      className="w-16 h-8 text-sm px-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] text-center transition-colors"
                     />
                   </div>
                   <p className="text-xs text-[var(--text-tertiary)]">
@@ -1187,27 +1210,27 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             </div>
           ) : isPreviewMode ? (
             // Режим предпросмотра - показываем обработанный Markdown
-            <div className="w-full px-5 py-4 rounded-xl bg-[var(--bg-card)] border border-gray-700 min-h-[150px] prose prose-invert prose-sm max-w-none text-[var(--text-primary)] transition-colors">
+            <div className="w-full px-5 py-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-primary)] min-h-[150px] prose prose-invert prose-sm max-w-none text-[var(--text-primary)] transition-colors">
               <ReactMarkdown
                 remarkPlugins={[remarkMath, remarkGfm]}
                 rehypePlugins={[rehypeKatex, rehypeRaw]}
                 components={{
-                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 text-white" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 text-white" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2 text-white" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-3 text-gray-200 leading-relaxed" {...props} />,
-                  ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1 text-gray-200" {...props} />,
-                  ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1 text-gray-200" {...props} />,
-                  li: ({node, ...props}) => <li className="text-gray-200" {...props} />,
-                  strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
-                  em: ({node, ...props}) => <em className="italic text-gray-300" {...props} />,
+                  h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 text-[var(--text-primary)]" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 text-[var(--text-primary)]" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]" {...props} />,
+                  p: ({node, ...props}) => <p className="mb-3 text-[var(--text-primary)] leading-relaxed" {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1 text-[var(--text-primary)]" {...props} />,
+                  ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1 text-[var(--text-primary)]" {...props} />,
+                  li: ({node, ...props}) => <li className="text-[var(--text-primary)]" {...props} />,
+                  strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-primary)]" {...props} />,
+                  em: ({node, ...props}) => <em className="italic text-[var(--text-primary)]" {...props} />,
                   code: ({node, inline, ...props}: any) => 
                     inline ? (
-                      <code className="px-1.5 py-0.5 rounded bg-gray-800 text-purple-300 text-sm font-mono" {...props} />
+                      <code className="px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-mono" {...props} />
                     ) : (
-                      <code className="block p-3 rounded bg-gray-800 text-gray-200 text-sm font-mono overflow-x-auto" {...props} />
+                      <code className="block p-3 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-mono overflow-x-auto" {...props} />
                     ),
-                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-500 pl-4 italic text-gray-300 my-3" {...props} />,
+                  blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-500 pl-4 italic text-[var(--text-primary)] my-3" {...props} />,
                 }}
               >
                 {questionText || getText('tests.emptyQuestion', 'Текст вопроса отсутствует')}
@@ -1219,7 +1242,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               <textarea
                 ref={questionTextareaRef}
                 style={{ height: `${questionHeight}px` }}
-                className="w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-gray-400 bg-[var(--bg-card)] border border-gray-700 transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-gray-600 resize-none text-sm font-mono"
+                className="w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--border-primary)] transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)] resize-none text-sm font-mono"
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}
                 onSelect={(e) => {
@@ -1236,19 +1259,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 }}
                 placeholder={getText('tests.questionPlaceholder', 'Введите текст вопроса...')}
               />
-              {/* Кнопка переключения версий - показывается только если есть версии */}
-              {textVersions.question && (
-                <button
-                  type="button"
-                  onClick={() => toggleTextVersion('question')}
-                  className="absolute bottom-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
-                  title={textVersions.question.isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}
-                >
-                  <Icons.ArrowLeft className="h-3.5 w-3.5" />
-                  <Icons.ArrowRight className="h-3.5 w-3.5 -ml-1" />
-                  <span>{textVersions.question.isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}</span>
-                </button>
-              )}
               {/* Resize handle */}
               <div
                 className="absolute bottom-2 right-2 w-10 h-10 cursor-nwse-resize flex items-center justify-center group/resize"
@@ -1274,7 +1284,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             <img
               src={imageUrl}
               alt="Question"
-            className="max-w-full h-auto rounded-lg border border-gray-700"
+            className="max-w-full h-auto rounded-lg border border-[var(--border-primary)]"
             />
             <button
               onClick={() => setImageUrl('')}
@@ -1309,19 +1319,19 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 <div className="flex-1">
                   {isPreviewMode ? (
                     // Режим предпросмотра - показываем обработанный Markdown
-                    <div className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-gray-700 min-h-[60px] prose prose-invert prose-sm max-w-none text-[var(--text-primary)] transition-colors">
+                    <div className="w-full px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-primary)] min-h-[60px] prose prose-invert prose-sm max-w-none text-[var(--text-primary)] transition-colors">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath, remarkGfm]}
                         rehypePlugins={[rehypeKatex, rehypeRaw]}
                         components={{
-                          p: ({node, ...props}) => <p className="mb-0 text-gray-200 leading-relaxed" {...props} />,
-                          strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
-                          em: ({node, ...props}) => <em className="italic text-gray-300" {...props} />,
+                          p: ({node, ...props}) => <p className="mb-0 text-[var(--text-primary)] leading-relaxed" {...props} />,
+                          strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-primary)]" {...props} />,
+                          em: ({node, ...props}) => <em className="italic text-[var(--text-primary)]" {...props} />,
                           code: ({node, inline, ...props}: any) => 
                             inline ? (
-                              <code className="px-1.5 py-0.5 rounded bg-gray-800 text-purple-300 text-sm font-mono" {...props} />
+                              <code className="px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-mono" {...props} />
                             ) : (
-                              <code className="block p-3 rounded bg-gray-800 text-gray-200 text-sm font-mono overflow-x-auto" {...props} />
+                              <code className="block p-3 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-mono overflow-x-auto" {...props} />
                             ),
                         }}
                       >
@@ -1337,14 +1347,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                         value={answer.value}
                         onChange={(e) => handleAnswerChange(index, e.target.value)}
                         placeholder={`${getText('tests.answer', 'Ответ')} ${index + 1}`}
-                        className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder-gray-400 bg-[var(--bg-card)] border border-gray-700 transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-gray-600 resize-none text-sm font-mono"
+                        className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--border-primary)] transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)] resize-none text-sm font-mono"
                       />
                       {/* Кнопка переключения версий - показывается только если есть версии */}
                       {textVersions.answers?.[index] && (
                         <button
                           type="button"
                           onClick={() => toggleTextVersion('answer', index)}
-                          className="absolute bottom-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
+                          className="absolute bottom-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
                           title={textVersions.answers[index].isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}
                         >
                           <Icons.ArrowLeft className="h-3.5 w-3.5" />
@@ -1395,7 +1405,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           })() && (
             <button
               onClick={handleAddAnswer}
-              className="mt-3 w-full px-4 py-2.5 border-2 border-dashed border-gray-700 rounded-lg hover:border-white hover:bg-gray-800/50 transition-colors flex items-center justify-center gap-2 text-gray-400 hover:text-white"
+              className="mt-3 w-full px-4 py-2.5 border-2 border-dashed border-[var(--border-primary)] rounded-lg hover:border-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             >
               <Icons.Plus className="h-5 w-5" />
               <span>{getText('tests.addAnswer', 'Добавить вариант')}</span>

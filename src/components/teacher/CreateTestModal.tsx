@@ -273,14 +273,14 @@ const CreateTestModal: React.FC<CreateTestModalProps> = ({
               rows={4}
               maxLength={600}
               className={`
-                w-full px-5 py-4 rounded-xl text-white placeholder-gray-400 text-sm
-                bg-[#0B0B0B] border transition-all duration-300 ease-in-out resize-none
-                focus:outline-none focus:border-white hover:border-gray-500
+                w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-[var(--text-tertiary)] text-sm
+                bg-[var(--bg-card)] border transition-all duration-300 ease-in-out resize-none
+                focus:outline-none focus:border-[var(--text-primary)] hover:border-[var(--border-primary)]
                 ${errors.description 
                   ? 'border-red-500 focus:border-red-400' 
                   : description.length > 600
                     ? 'border-red-500'
-                    : 'border-gray-600'
+                    : 'border-[var(--border-primary)]'
                 }
               `}
             />
