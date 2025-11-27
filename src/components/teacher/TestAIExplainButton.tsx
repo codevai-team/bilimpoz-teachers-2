@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import { useTranslation } from '@/hooks/useTranslation'
 import Tooltip from '@/components/ui/Tooltip'
+import { AILoadingAnimation } from '@/components/ui/AILoadingAnimation'
 import { loadQuestionDraft, saveQuestionDraft, type QuestionType } from '@/lib/test-storage'
 
 interface AnswerVariant {
@@ -269,19 +270,23 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
     return t('testEditor.ai.getExplanation', 'Получить объяснение от AI')
   }
 
+  // Если идет загрузка, показываем только анимацию
+  if (isLoading) {
+    return (
+      <div className="p-2 flex items-center justify-center">
+        <AILoadingAnimation isActive={true} size={22} />
+      </div>
+    )
+  }
+
   return (
     <Tooltip text={getTooltip()}>
       <button
         type="button"
         onClick={handleClick}
-        disabled={isLoading}
-        className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative disabled:opacity-50 disabled:cursor-not-allowed"
+        className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative"
       >
-        {isLoading ? (
-          <div className="loader-circle w-7 h-7 flex-shrink-0 flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : isShowingExplanation ? (
+        {isShowingExplanation ? (
           <Icons.ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
         ) : (
           <svg

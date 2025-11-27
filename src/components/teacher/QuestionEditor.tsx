@@ -970,6 +970,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     }
 
     setAiLoading(true)
+    onAiLoadingChange?.(questionId, true)
     try {
       // Конвертируем изображение в LaTeX
       const latexCode = await convertImageToLatex(file)
@@ -996,6 +997,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       alert(getText('questions.form.imageConversionError', 'Ошибка при конвертации изображения'))
     } finally {
       setAiLoading(false)
+      onAiLoadingChange?.(questionId, false)
       // Очищаем input для возможности повторной загрузки того же файла
       if (imageToLatexInputRef.current) {
         imageToLatexInputRef.current.value = ''
