@@ -10,6 +10,7 @@ import 'katex/dist/katex.min.css'
 import { Icons } from '@/components/ui/Icons'
 import Button from '@/components/ui/Button'
 import RadioButton from '@/components/ui/RadioButton'
+import Tooltip from '@/components/ui/Tooltip'
 import TestEditorField from '@/components/teacher/TestEditorField'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAI } from '@/hooks/useAI'
@@ -34,6 +35,7 @@ interface QuestionEditorProps {
   onRegenerateExplanation?: () => void
   onAiLoadingChange?: (questionId: string, isLoading: boolean) => void
   validationError?: string | null
+  isRegeneratingExplanation?: boolean
 }
 
 const QuestionEditor: React.FC<QuestionEditorProps> = ({
@@ -49,7 +51,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   onFormatRegister,
   onRegenerateExplanation,
   onAiLoadingChange,
-  validationError: externalValidationError
+  validationError: externalValidationError,
+  isRegeneratingExplanation = false
 }) => {
   const { t, ready } = useTranslation()
   const [mounted, setMounted] = useState(false)
@@ -63,7 +66,10 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     if (type === 'math2') {
       return 5
     }
-    return 2 // analogy, rac, grammar, standard - минимум 2
+      if (type === 'standard') {
+        return 4
+      }
+      return 2 // analogy, rac, grammar - минимум 2
   }
   
   // Определяем максимальное количество ответов в зависимости от типа вопроса
@@ -80,10 +86,13 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     return 10 // standard - до 10 ответов
   }
   
-  // Определяем начальное количество ответов в зависимости от типа вопроса
-  const getInitialAnswersCount = () => {
-    return getMaxAnswersCountForType(questionType)
-  }
+    // Определяем начальное количество ответов в зависимости от типа вопроса
+    const getInitialAnswersCount = () => {
+      if (questionType === 'standard') {
+        return 4 // По умолчанию 4 варианта для standard
+      }
+      return getMaxAnswersCountForType(questionType)
+    }
   
   const [answers, setAnswers] = useState<Array<{ value: string; isCorrect: boolean }>>(
     Array.from({ length: getInitialAnswersCount() }, () => ({ value: '', isCorrect: false }))
@@ -189,8 +198,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             setQuestionText(loadedData.question || '')
           }
           
-          if (loadedData.textVersions.answers) {
-            const defaultAnswersCount = getMaxAnswersCountForType(questionType)
+            if (loadedData.textVersions.answers) {
+              const defaultAnswersCount = getInitialAnswersCount()
             const loadedAnswers = loadedData.answers && loadedData.answers.length > 0 
               ? loadedData.answers 
               : Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false }))
@@ -205,16 +214,16 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               }
               return answer
             }))
-          } else {
-            const defaultAnswersCount = getMaxAnswersCountForType(questionType)
+            } else {
+              const defaultAnswersCount = getInitialAnswersCount()
             setAnswers(loadedData.answers && loadedData.answers.length > 0 
               ? loadedData.answers 
               : Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false }))
             )
           }
-        } else {
-          setQuestionText(loadedData.question || '')
-          const defaultAnswersCount = getMaxAnswersCountForType(questionType)
+          } else {
+            setQuestionText(loadedData.question || '')
+            const defaultAnswersCount = getInitialAnswersCount()
           setAnswers(loadedData.answers && loadedData.answers.length > 0 
             ? loadedData.answers 
             : Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false }))
@@ -224,9 +233,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         setPoints(loadedData.points || 1)
         setTimeLimit(loadedData.timeLimit || 60)
         setImageUrl(loadedData.imageUrl || '')
-      } else {
-      // Если данных нет, инициализируем с правильным количеством ответов
-      const defaultAnswersCount = getMaxAnswersCountForType(questionType)
+        
+        // Загружаем AI объяснение
+        if (loadedData.explanation_ai) {
+          setEditableExplanation(loadedData.explanation_ai)
+        }
+        } else {
+        // Если данных нет, инициализируем с правильным количеством ответов
+        const defaultAnswersCount = getInitialAnswersCount()
       setAnswers(Array.from({ length: defaultAnswersCount }, () => ({ value: '', isCorrect: false })))
     }
   }, [mounted, questionId, questionType])
@@ -235,7 +249,9 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   useEffect(() => {
     if (!mounted) return
     
-    const requiredCount = getMaxAnswersCountForType(questionType)
+    // Для типов с фиксированным количеством ответов используем максимальное количество
+    // Для standard используем начальное количество (4)
+    const requiredCount = questionType === 'standard' ? getInitialAnswersCount() : getMaxAnswersCountForType(questionType)
     
     // Если текущее количество ответов не соответствует требуемому, обновляем
     if (answers.length !== requiredCount) {
@@ -270,7 +286,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         points,
         timeLimit,
         imageUrl,
-        language: testLanguage
+        language: testLanguage,
+        explanation_ai: editableExplanation || aiExplanation || undefined
       })
 
       // Уведомляем родителя об обновлении
@@ -283,7 +300,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     }, 500)
 
     return () => clearTimeout(saveTimer)
-  }, [mounted, questionId, questionType, questionText, answers, points, timeLimit, imageUrl, testLanguage, onQuestionUpdate])
+  }, [mounted, questionId, questionType, questionText, answers, points, timeLimit, imageUrl, testLanguage, editableExplanation, aiExplanation, onQuestionUpdate])
 
 
   const getText = (key: string, fallback: string) => {
@@ -455,6 +472,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             }
           } : {})
         }
+        // Сохраняем также AI объяснение
+        questionData.explanation_ai = editableExplanation || aiExplanation || existingData?.explanation_ai
         saveQuestionDraft(questionId, questionType, questionData)
       }
 
@@ -563,11 +582,11 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         console.log('💾 Используем сохраненное выделение')
       } else {
         // Fallback: ищем активный элемент
-        const activeElement = document.activeElement
-        if (activeElement && activeElement.tagName === 'TEXTAREA') {
+      const activeElement = document.activeElement
+      if (activeElement && activeElement.tagName === 'TEXTAREA') {
           textarea = activeElement as HTMLTextAreaElement
-          const isQuestionTextarea = textarea === questionTextareaRef.current
-          const answerIndexAttr = textarea.getAttribute('data-answer-index')
+        const isQuestionTextarea = textarea === questionTextareaRef.current
+        const answerIndexAttr = textarea.getAttribute('data-answer-index')
           answerIndex = answerIndexAttr !== null ? parseInt(answerIndexAttr) : null
           fieldType = isQuestionTextarea ? 'question' : (answerIndex !== null ? 'answer' : null)
           console.log('📋 Используем активный элемент')
@@ -899,6 +918,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             ...questionVersion,
             isShowingImproved: newIsShowingImproved
           }
+          // Сохраняем также AI объяснение
+          questionData.explanation_ai = editableExplanation || aiExplanation || questionData.explanation_ai
           saveQuestionDraft(questionId, questionType, questionData)
         }
       }
@@ -933,6 +954,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             ...answerVersion,
             isShowingImproved: newIsShowingImproved
           }
+          // Сохраняем также AI объяснение
+          questionData.explanation_ai = editableExplanation || aiExplanation || questionData.explanation_ai
           saveQuestionDraft(questionId, questionType, questionData)
         }
       }
@@ -1009,7 +1032,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   const handleAddAnswer = () => {
     const maxAnswers = getMaxAnswersCountForType(questionType)
     if (answers.length < maxAnswers) {
-      setAnswers([...answers, { value: '', isCorrect: false }])
+    setAnswers([...answers, { value: '', isCorrect: false }])
     }
   }
 
@@ -1128,10 +1151,17 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                   <button
                     type="button"
                     onClick={onRegenerateExplanation}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+                    disabled={isRegeneratingExplanation}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium text-white ${
+                      isRegeneratingExplanation
+                        ? 'bg-purple-600 cursor-not-allowed'
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
                   >
-                    <Icons.RefreshCw className="h-4 w-4" />
-                    <span>Перегенерировать объяснение</span>
+                    <Icons.RefreshCw className={`h-4 w-4 ${isRegeneratingExplanation ? 'animate-spin' : ''}`} />
+                    <span>
+                      {isRegeneratingExplanation ? 'Генерация...' : 'Перегенерировать объяснение'}
+                    </span>
                   </button>
                 </div>
               )}
@@ -1382,18 +1412,19 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                     </div>
                   )}
                 </div>
-                {/* Кнопка удаления - показываем если больше минимального количества */}
-                {(() => {
+                {/* Кнопка удаления - показываем только для standard, если больше минимального количества */}
+                {questionType === 'standard' && (() => {
                   const minAnswers = getMinAnswersCountForType(questionType)
                   return answers.length > minAnswers
                 })() && (
-                  <button
-                    onClick={() => handleRemoveAnswer(index)}
-                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
-                    title={getText('tests.removeAnswer', 'Удалить вариант')}
-                  >
-                    <Icons.Trash2 className="h-4 w-4" />
-                  </button>
+                  <Tooltip text={getText('tests.removeAnswer', 'Удалить вариант')}>
+                    <button
+                      onClick={() => handleRemoveAnswer(index)}
+                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <Icons.Trash2 className="h-4 w-4" />
+                    </button>
+                  </Tooltip>
                 )}
               </div>
               </div>

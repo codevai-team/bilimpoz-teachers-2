@@ -19,7 +19,7 @@ export async function getSetting(key: string, defaultValue?: string): Promise<st
  * Получение токена бота учителя из БД
  */
 export async function getTeacherBotToken(): Promise<string | null> {
-  return await getSetting('TEACHER_BOT_TOKEN_3')
+  return await getSetting('TEACHER_BOT_TOKEN_2')
 }
 
 /**

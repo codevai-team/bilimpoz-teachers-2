@@ -170,7 +170,8 @@ export async function POST(
       points,
       timeLimit,
       type,
-      language
+      language,
+      explanation_ai
     } = body
 
     // Валидация
@@ -220,7 +221,8 @@ export async function POST(
         source_id: testId,
         points: points || 1,
         language: language,
-        time_limit: timeLimit || 60
+        time_limit: timeLimit || 60,
+        explanation_ai: explanation_ai || null
       }
     })
 
@@ -282,7 +284,8 @@ export async function POST(
         points: questionWithVariants.points,
         timeLimit: questionWithVariants.time_limit,
         type: questionWithVariants.type_question,
-        language: questionWithVariants.language
+        language: questionWithVariants.language,
+        explanationAi: questionWithVariants.explanation_ai || undefined
       }
     })
   } catch (error) {

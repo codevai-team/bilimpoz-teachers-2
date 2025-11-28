@@ -24,9 +24,10 @@ interface TestToolbarProps {
   onExplainQuestion?: () => void;
   activeFormats?: ActiveFormats;
   isAiLoading?: boolean;
+  isImageConverting?: boolean;
 }
 
-export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, onMagicWand, onSaveSelection, onTogglePreview, onExplainQuestion, activeFormats, isAiLoading = false }: TestToolbarProps) {
+export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, onMagicWand, onSaveSelection, onTogglePreview, onExplainQuestion, activeFormats, isAiLoading = false, isImageConverting = false }: TestToolbarProps) {
   const { t } = useTranslation();
   const [showAiDropdown, setShowAiDropdown] = useState(false);
   const aiDropdownRef = useRef<HTMLDivElement>(null);
@@ -196,11 +197,15 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
                 showAiDropdown ? 'bg-[var(--bg-hover)]' : 'hover:bg-[var(--bg-hover)]'
               }`}
             >
-              <svg width="18" height="18" viewBox="0 0 512 512" className={`transition-colors ${
-                showAiDropdown ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)]'
-              }`}>
-                <path fill="currentColor" d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"/>
-              </svg>
+              {isImageConverting ? (
+                <AILoadingAnimation isActive={true} size={18} />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 512 512" className={`transition-colors ${
+                  showAiDropdown ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)]'
+                }`}>
+                  <path fill="currentColor" d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"/>
+                </svg>
+              )}
             </button>
           </Tooltip>
 
@@ -217,41 +222,34 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
               }}
             >
               {/* Изображение в LaTeX */}
-              {isAiLoading ? (
-                <div className="w-full px-4 py-3 flex items-center justify-center gap-3">
-                  <AILoadingAnimation isActive={true} size={18} />
-                  <span className="text-sm text-[var(--text-secondary)]">Обработка изображения...</span>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // Предотвращаем потерю фокуса
+                }}
+                onClick={() => {
+                  onImageToLatex?.();
+                  setShowAiDropdown(false);
+                  // Восстанавливаем фокус на сохраненном элементе
+                  setTimeout(() => {
+                    if (savedActiveElementRef.current && savedActiveElementRef.current.tagName === 'TEXTAREA') {
+                      savedActiveElementRef.current.focus();
+                    }
+                    savedActiveElementRef.current = null;
+                  }, 0);
+                }}
+                className="w-full px-4 py-3 text-left text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-3"
+              >
+                <div className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <PiSigma size={16} />
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Предотвращаем потерю фокуса
-                  }}
-                  onClick={() => {
-                    onImageToLatex?.();
-                    setShowAiDropdown(false);
-                    // Восстанавливаем фокус на сохраненном элементе
-                    setTimeout(() => {
-                      if (savedActiveElementRef.current && savedActiveElementRef.current.tagName === 'TEXTAREA') {
-                        savedActiveElementRef.current.focus();
-                      }
-                      savedActiveElementRef.current = null;
-                    }, 0);
-                  }}
-                  className="w-full px-4 py-3 text-left text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                      <circle cx="8.5" cy="8.5" r="1.5"/>
-                      <polyline points="21 15 16 10 5 21"/>
-                    </svg>
-                    <PiSigma size={16} />
-                  </div>
-                  <span className="text-sm">Изображение в LaTeX</span>
-                </button>
-              )}
+                <span className="text-sm">Изображение в LaTeX</span>
+              </button>
             </div>
           )}
         </div>

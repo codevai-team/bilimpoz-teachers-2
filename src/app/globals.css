@@ -170,6 +170,41 @@
 .katex:not(.katex-display) {
   background: var(--bg-hover);
   padding: 0.1em 0.3em;
+}
+
+/* Улучшение отображения дробей */
+.katex .frac-line {
+  border-bottom-width: 0.04em;
+  min-height: 0.04em;
+}
+
+.katex .frac-num,
+.katex .frac-den {
+  font-size: 1em;
+  line-height: 1.2;
+}
+
+/* Убеждаемся, что все элементы дробей видны */
+.katex .mfrac {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.katex .mfrac > span {
+  display: block;
+  text-align: center;
+}
+
+/* Улучшение видимости цифр в дробях */
+.katex .mord {
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+/* Улучшение контраста для лучшей читаемости */
+.katex .mfrac .mord {
+  color: var(--text-primary);
+  opacity: 1;
   border-radius: 4px;
 }
 

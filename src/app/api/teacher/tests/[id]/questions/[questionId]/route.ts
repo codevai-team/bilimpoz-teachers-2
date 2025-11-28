@@ -77,7 +77,8 @@ export async function PUT(
       answerVariants,
       photoUrl,
       points,
-      timeLimit
+      timeLimit,
+      explanation_ai
     } = body
 
     // Валидация
@@ -143,7 +144,8 @@ export async function PUT(
         correct_variants_id: correctVariantIds.join(','),
         photo_url: photoUrl || null,
         points: points || existingQuestion.points,
-        time_limit: timeLimit || existingQuestion.time_limit
+        time_limit: timeLimit || existingQuestion.time_limit,
+        explanation_ai: explanation_ai !== undefined ? explanation_ai : existingQuestion.explanation_ai
       },
       include: {
         answer_variants: {
@@ -171,7 +173,8 @@ export async function PUT(
         points: updatedQuestion.points,
         timeLimit: updatedQuestion.time_limit,
         type: updatedQuestion.type_question,
-        language: updatedQuestion.language
+        language: updatedQuestion.language,
+        explanationAi: updatedQuestion.explanation_ai || undefined
       }
     })
   } catch (error) {
