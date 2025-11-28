@@ -5,6 +5,7 @@ import { Icons } from '@/components/ui/Icons'
 import { useTranslation } from '@/hooks/useTranslation'
 import Tooltip from '@/components/ui/Tooltip'
 import { AILoadingAnimation } from '@/components/ui/AILoadingAnimation'
+import Toast, { ToastVariant } from '@/components/ui/Toast'
 import { loadQuestionDraft, saveQuestionDraft, type QuestionType } from '@/lib/test-storage'
 
 interface AnswerVariant {
@@ -41,28 +42,52 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
   const [hasExplanation, setHasExplanation] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [toast, setToast] = useState<{ isOpen: boolean; message: string; variant: ToastVariant }>({
+    isOpen: false,
+    message: '',
+    variant: 'error'
+  })
 
   // Монтирование компонента
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Загрузка данных из localStorage при монтировании
+  // Функция для проверки наличия AI объяснения
+  const checkHasExplanation = React.useCallback(() => {
+    if (typeof window === 'undefined' || !testType || !blockId) return false
+    
+    const questionData = loadQuestionDraft(blockId, testType as QuestionType)
+    const hasExp = !!(questionData?.explanation_ai && questionData.explanation_ai.trim())
+    console.log('Checking explanation for:', { blockId, testType, hasExp, explanation: questionData?.explanation_ai?.substring(0, 50) })
+    return hasExp
+  }, [blockId, testType])
+
+  // Загрузка данных из localStorage при монтировании и изменении параметров
   useEffect(() => {
     if (!mounted || typeof window === 'undefined' || !testType || !blockId) return
     
     console.log('Loading question data for:', { blockId, testType })
     
-    // Загружаем данные вопроса через функцию loadQuestionDraft
-    const questionData = loadQuestionDraft(blockId, testType as QuestionType)
-    console.log('Loaded question data:', questionData)
+    const hasExp = checkHasExplanation()
+    setHasExplanation(hasExp)
+    console.log('Has explanation set to:', hasExp)
+  }, [mounted, blockId, testType, checkHasExplanation])
+
+  // Периодическая синхронизация с localStorage для отслеживания изменений
+  useEffect(() => {
+    if (!mounted || typeof window === 'undefined' || !testType || !blockId) return
     
-    if (questionData) {
-      const hasExp = !!questionData.explanation_ai
+    const syncWithLocalStorage = () => {
+      const hasExp = checkHasExplanation()
       setHasExplanation(hasExp)
-      console.log('Has explanation:', hasExp)
     }
-  }, [mounted, blockId, testType])
+    
+    // Проверяем каждые 1000мс для синхронизации с изменениями
+    const interval = setInterval(syncWithLocalStorage, 1000)
+    
+    return () => clearInterval(interval)
+  }, [mounted, blockId, testType, checkHasExplanation])
 
   // Генерация объяснения
   const generateExplanation = async () => {
@@ -98,14 +123,22 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
     // Валидация
     if (!questionToUse || !questionToUse.trim()) {
       const errorMsg = t('testEditor.validation.fillQuestionAndAnswers', 'Заполните вопрос и варианты ответов')
-      alert(errorMsg)
+      setToast({
+        isOpen: true,
+        message: errorMsg,
+        variant: 'error'
+      })
       console.error('Question is empty:', { questionToUse })
       return null
     }
     
     if (!answersToUse || answersToUse.length === 0) {
       const errorMsg = t('testEditor.validation.fillQuestionAndAnswers', 'Заполните вопрос и варианты ответов')
-      alert(errorMsg)
+      setToast({
+        isOpen: true,
+        message: errorMsg,
+        variant: 'error'
+      })
       console.error('Answers are empty:', { answersToUse })
       return null
     }
@@ -114,7 +147,11 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
     const hasFilledAnswers = answersToUse.some(a => a.value && a.value.trim())
     if (!hasFilledAnswers) {
       const errorMsg = t('testEditor.validation.fillQuestionAndAnswers', 'Заполните хотя бы один вариант ответа')
-      alert(errorMsg)
+      setToast({
+        isOpen: true,
+        message: errorMsg,
+        variant: 'error'
+      })
       console.error('No filled answers found:', answersToUse)
       return null
     }
@@ -212,7 +249,11 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
         }
       }
       
-      alert(errorMessage)
+      setToast({
+        isOpen: true,
+        message: errorMessage,
+        variant: 'error'
+      })
       return null
     } finally {
       setIsLoading(false)
@@ -280,35 +321,44 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
   }
 
   return (
-    <Tooltip text={getTooltip()}>
-      <button
-        type="button"
-        onClick={handleClick}
-        className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative"
-      >
-        {isShowingExplanation ? (
-          <Icons.ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
-        ) : (
-          <svg
-            width="22"
-            height="22"
-            viewBox="-10 -10 562 562"
-            className={`transition-colors ${
-              hasExplanation
-                ? 'text-purple-500'
-                : 'text-gray-400 group-hover:text-purple-400'
-            }`}
-          >
-            <path
-              fill={hasExplanation ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              strokeWidth={hasExplanation ? '0' : '20'}
-              d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"
-            />
-          </svg>
-        )}
-      </button>
-    </Tooltip>
+    <>
+      <Tooltip text={getTooltip()}>
+        <button
+          type="button"
+          onClick={handleClick}
+          className="p-2 hover:bg-[var(--bg-hover)] rounded-lg transition-colors group relative"
+        >
+          {isShowingExplanation ? (
+            <Icons.ArrowLeft className="h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
+          ) : (
+            <svg
+              width="22"
+              height="22"
+              viewBox="-10 -10 562 562"
+              className={`transition-colors ${
+                hasExplanation
+                  ? 'text-purple-500'
+                  : 'text-gray-400 group-hover:text-purple-400'
+              }`}
+            >
+              <path
+                fill={hasExplanation ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth={hasExplanation ? '0' : '20'}
+                d="M 327.5 85.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 128 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 128 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 64 L 426.8 7.5 C 425.1 3 420.8 0 416 0 s -9.1 3 -10.8 7.5 L 384 64 L 327.5 85.2 Z M 205.1 73.3 c -2.6 -5.7 -8.3 -9.3 -14.5 -9.3 s -11.9 3.6 -14.5 9.3 L 123.3 187.3 L 9.3 240 C 3.6 242.6 0 248.3 0 254.6 s 3.6 11.9 9.3 14.5 l 114.1 52.7 L 176 435.8 c 2.6 5.7 8.3 9.3 14.5 9.3 s 11.9 -3.6 14.5 -9.3 l 52.7 -114.1 l 114.1 -52.7 c 5.7 -2.6 9.3 -8.3 9.3 -14.5 s -3.6 -11.9 -9.3 -14.5 L 257.8 187.4 L 205.1 73.3 Z M 384 384 l -56.5 21.2 c -4.5 1.7 -7.5 6 -7.5 10.8 s 3 9.1 7.5 10.8 L 384 448 l 21.2 56.5 c 1.7 4.5 6 7.5 10.8 7.5 s 9.1 -3 10.8 -7.5 L 448 448 l 56.5 -21.2 c 4.5 -1.7 7.5 -6 7.5 -10.8 s -3 -9.1 -7.5 -10.8 L 448 384 l -21.2 -56.5 c -1.7 -4.5 -6 -7.5 -10.8 -7.5 s -9.1 3 -10.8 7.5 L 384 384 Z"
+              />
+            </svg>
+          )}
+        </button>
+      </Tooltip>
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast({ ...toast, isOpen: false })}
+        message={toast.message}
+        variant={toast.variant}
+        duration={4000}
+      />
+    </>
   )
 }
 

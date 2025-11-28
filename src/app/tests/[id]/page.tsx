@@ -722,6 +722,17 @@ export default function TestEditorPage() {
           const localQuestions = getTestQuestions(testId)
           setQuestions(localQuestions)
           setOriginalQuestionsFromDB([]) // Для временных тестов нет исходных вопросов из БД
+          
+          // Загружаем AI объяснения из localStorage для временных тестов
+          const tempExplanations: Record<string, string> = {}
+          localQuestions.forEach(question => {
+            const questionData = loadQuestionDraft(question.id, question.type)
+            if (questionData?.explanation_ai) {
+              tempExplanations[question.id] = questionData.explanation_ai
+            }
+          })
+          setAiExplanations(tempExplanations)
+          
           if (localQuestions.length > 0 && !selectedQuestionId) {
             setSelectedQuestionId(localQuestions[0].id)
           }
@@ -773,7 +784,8 @@ export default function TestEditorPage() {
                   points: dbQuestion.points,
                   timeLimit: dbQuestion.timeLimit,
                   imageUrl: dbQuestion.photoUrl,
-                  language: dbQuestion.language
+                  language: dbQuestion.language,
+                  explanation_ai: dbQuestion.explanationAi || undefined
                 })
 
                 // Добавляем в список вопросов
@@ -801,6 +813,17 @@ export default function TestEditorPage() {
               
               setQuestions(allQuestions)
               setOriginalQuestionsFromDB([...dbQuestions]) // Сохраняем исходные вопросы из БД
+              
+              // Загружаем AI объяснения из localStorage для всех вопросов
+              const allExplanations: Record<string, string> = {}
+              allQuestions.forEach(question => {
+                const questionData = loadQuestionDraft(question.id, question.type)
+                if (questionData?.explanation_ai) {
+                  allExplanations[question.id] = questionData.explanation_ai
+                }
+              })
+              setAiExplanations(allExplanations)
+              
               if (allQuestions.length > 0 && !selectedQuestionId) {
                 setSelectedQuestionId(allQuestions[0].id)
               }
@@ -819,6 +842,17 @@ export default function TestEditorPage() {
               
               setQuestions(tempOnlyQuestions)
               setOriginalQuestionsFromDB([])
+              
+              // Загружаем AI объяснения из localStorage для временных вопросов
+              const tempOnlyExplanations: Record<string, string> = {}
+              tempOnlyQuestions.forEach(question => {
+                const questionData = loadQuestionDraft(question.id, question.type)
+                if (questionData?.explanation_ai) {
+                  tempOnlyExplanations[question.id] = questionData.explanation_ai
+                }
+              })
+              setAiExplanations(tempOnlyExplanations)
+              
               if (tempOnlyQuestions.length > 0 && !selectedQuestionId) {
                 setSelectedQuestionId(tempOnlyQuestions[0].id)
               }
@@ -1358,7 +1392,8 @@ export default function TestEditorPage() {
                 points: questionData.points || 1,
                 timeLimit: questionData.timeLimit || 60,
                 type: question.type,
-                language: formData.language
+                language: formData.language,
+                explanation_ai: questionData.explanation_ai || null
               })
             }
           )
@@ -1720,14 +1755,18 @@ export default function TestEditorPage() {
                         }))
                       }}
                       validationError={questionValidationErrors[question.id] || null}
+                      isRegeneratingExplanation={aiLoadingStates[question.id] || false}
                       onRegenerateExplanation={async () => {
-                        // Вызываем регенерацию через TestAIExplainButton
-                        // Для этого нужно найти кнопку и вызвать её метод генерации
-                        // Пока просто вызываем API напрямую
+                        // Устанавливаем состояние загрузки
+                        setAiLoadingStates(prev => ({
+                          ...prev,
+                          [question.id]: true
+                        }))
+                        
                         try {
                           const questionData = loadQuestionDraft(question.id, question.type)
                           if (!questionData || !questionData.question) {
-                            alert('Заполните вопрос и варианты ответов')
+                            showToast('Заполните вопрос и варианты ответов', 'error')
                             return
                           }
                           
@@ -1747,7 +1786,7 @@ export default function TestEditorPage() {
                           
                           if (!response.ok) {
                             const error = await response.json()
-                            alert(error.error || 'Ошибка при генерации объяснения')
+                            showToast(error.error || 'Ошибка при генерации объяснения', 'error')
                             return
                           }
                           
@@ -1765,9 +1804,17 @@ export default function TestEditorPage() {
                             questionData.explanation_ai = newExplanation
                             saveQuestionDraft(question.id, question.type, questionData)
                           }
+                          
+                          showToast('Объяснение успешно обновлено', 'success')
                         } catch (error) {
                           console.error('Ошибка регенерации объяснения:', error)
-                          alert('Ошибка при генерации объяснения')
+                          showToast('Ошибка при генерации объяснения', 'error')
+                        } finally {
+                          // Убираем состояние загрузки
+                          setAiLoadingStates(prev => ({
+                            ...prev,
+                            [question.id]: false
+                          }))
                         }
                       }}
                     />
@@ -1844,7 +1891,8 @@ export default function TestEditorPage() {
             onMagicWand={handleMagicWand}
             onSaveSelection={handleSaveSelection}
             onExplainQuestion={handleExplainQuestion}
-            isAiLoading={selectedQuestionId ? (aiLoadingStates[selectedQuestionId] || false) : false || isAiConverting}
+            isAiLoading={selectedQuestionId ? (aiLoadingStates[selectedQuestionId] || false) : false}
+            isImageConverting={isAiConverting}
           />
           
           {/* Скрытый input для выбора изображения */}

@@ -14,11 +14,11 @@ class TelegramService {
 
     // Получение из базы данных
     const setting = await prisma.settings.findUnique({
-      where: { key: 'TEACHER_BOT_TOKEN_3' }
+      where: { key: 'TEACHER_BOT_TOKEN_2' }
     })
 
     if (!setting?.value) {
-      throw new Error('Telegram bot token not found in settings for TEACHER_BOT_TOKEN_3')
+      throw new Error('Telegram bot token not found in settings for TEACHER_BOT_TOKEN_2')
     }
 
     // Кэширование
