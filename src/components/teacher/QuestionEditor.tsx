@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button'
 import RadioButton from '@/components/ui/RadioButton'
 import Tooltip from '@/components/ui/Tooltip'
 import TestEditorField from '@/components/teacher/TestEditorField'
+import LatexPreviewModal from '@/components/teacher/LatexPreviewModal'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAI } from '@/hooks/useAI'
 import { 
@@ -136,6 +137,11 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   const aiHook = typeof window !== 'undefined' ? useAI() : null
   const improveText = aiHook?.improveText
   const convertImageToLatex = aiHook?.convertImageToLatex
+  
+  // Состояние для модального окна предпросмотра LaTeX
+  const [isLatexPreviewOpen, setIsLatexPreviewOpen] = useState(false)
+  const [convertedLatexCode, setConvertedLatexCode] = useState('')
+  const [latexInsertPosition, setLatexInsertPosition] = useState({ start: 0, end: 0 })
 
   useEffect(() => {
     setMounted(true)
@@ -995,26 +1001,17 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     setAiLoading(true)
     onAiLoadingChange?.(questionId, true)
     try {
+      // Сохраняем позицию курсора
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      setLatexInsertPosition({ start, end })
+      
       // Конвертируем изображение в LaTeX
       const latexCode = await convertImageToLatex(file)
       
-      // Вставляем LaTeX код в позицию курсора
-      const start = textarea.selectionStart
-      const end = textarea.selectionEnd
-      
-      const newText = 
-        questionText.substring(0, start) + 
-        latexCode + 
-        questionText.substring(end)
-      
-      setQuestionText(newText)
-      
-      // Восстанавливаем фокус и позицию курсора
-      setTimeout(() => {
-        textarea.focus()
-        const newPosition = start + latexCode.length
-        textarea.setSelectionRange(newPosition, newPosition)
-      }, 0)
+      // Показываем модальное окно для предпросмотра и редактирования
+      setConvertedLatexCode(latexCode)
+      setIsLatexPreviewOpen(true)
     } catch (error) {
       console.error('Ошибка конвертации изображения:', error)
       alert(getText('questions.form.imageConversionError', 'Ошибка при конвертации изображения'))
@@ -1026,6 +1023,29 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         imageToLatexInputRef.current.value = ''
       }
     }
+  }
+
+  // Обработчик подтверждения вставки LaTeX кода
+  const handleLatexConfirm = (latexCode: string) => {
+    const textarea = questionTextareaRef.current
+    if (!textarea) return
+    
+    const { start, end } = latexInsertPosition
+    
+    // Вставляем LaTeX код в позицию курсора
+    const newText = 
+      questionText.substring(0, start) + 
+      latexCode + 
+      questionText.substring(end)
+    
+    setQuestionText(newText)
+    
+    // Восстанавливаем фокус и позицию курсора
+    setTimeout(() => {
+      textarea.focus()
+      const newPosition = start + latexCode.length
+      textarea.setSelectionRange(newPosition, newPosition)
+    }, 0)
   }
 
   // Управление вариантами ответов
@@ -1118,31 +1138,58 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         </div>
           
           {isShowingExplanation ? (
-            // Отображение AI объяснения - используем TestEditorField
+            // Отображение AI объяснения
             <div className="flex flex-col h-full min-h-[500px]">
               <div className="flex-1 min-h-0 flex flex-col">
                 <div className="flex-1 min-h-0">
-                  <TestEditorField
-                    value={editableExplanation || aiExplanation || ''}
-                    onChange={(value) => {
-                      setEditableExplanation(value)
-                      // Сохраняем изменения в localStorage
-                      if (typeof window !== 'undefined' && questionType) {
-                        const questionData = loadQuestionDraft(questionId, questionType)
-                        if (questionData) {
-                          questionData.explanation_ai = value
-                          saveQuestionDraft(questionId, questionType, questionData)
+                  {isPreviewMode ? (
+                    // Режим предпросмотра - показываем обработанный Markdown (как для вопроса)
+                    <div className="w-full px-5 py-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-primary)] min-h-[500px] prose prose-invert prose-sm max-w-none text-[var(--text-primary)] transition-colors overflow-y-auto">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex, rehypeRaw]}
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-2xl font-bold mb-4 text-[var(--text-primary)]" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-3 text-[var(--text-primary)]" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]" {...props} />,
+                          p: ({node, ...props}) => <p className="mb-3 text-[var(--text-primary)] leading-relaxed" {...props} />,
+                          ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1 text-[var(--text-primary)]" {...props} />,
+                          ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1 text-[var(--text-primary)]" {...props} />,
+                          li: ({node, ...props}) => <li className="text-[var(--text-primary)]" {...props} />,
+                          strong: ({node, ...props}) => <strong className="font-bold text-[var(--text-primary)]" {...props} />,
+                          em: ({node, ...props}) => <em className="italic text-[var(--text-primary)]" {...props} />,
+                          code: ({node, inline, ...props}: any) => 
+                            inline ? (
+                              <code className="px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-mono" {...props} />
+                            ) : (
+                              <code className="block p-3 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-mono overflow-x-auto" {...props} />
+                            ),
+                          blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-purple-500 pl-4 italic text-[var(--text-primary)] my-3" {...props} />,
+                        }}
+                      >
+                        {editableExplanation || aiExplanation || getText('testEditor.emptyExplanation', 'Объяснение отсутствует')}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    // Режим редактирования - показываем textarea
+                    <textarea
+                      style={{ height: '500px' }}
+                      className="w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--border-primary)] transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)] resize-none text-sm font-mono"
+                      value={editableExplanation || aiExplanation || ''}
+                      onChange={(e) => {
+                        setEditableExplanation(e.target.value)
+                        // Сохраняем изменения в localStorage
+                        if (typeof window !== 'undefined' && questionType) {
+                          const questionData = loadQuestionDraft(questionId, questionType)
+                          if (questionData) {
+                            questionData.explanation_ai = e.target.value
+                            saveQuestionDraft(questionId, questionType, questionData)
+                          }
                         }
-                      }
-                    }}
-                    placeholder="Введите объяснение..."
-                    height={500}
-                    isPreviewMode={isPreviewMode}
-                    showResizeHandle={true}
-                    onFocus={() => {
-                      // Можно добавить логику активации поля
-                    }}
-                  />
+                      }}
+                      placeholder="Введите объяснение..."
+                    />
+                  )}
                 </div>
               </div>
               {/* Кнопка регенерации объяснения */}
@@ -1539,6 +1586,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
         className="hidden"
         disabled={aiLoading}
+      />
+
+      {/* Модальное окно предпросмотра LaTeX */}
+      <LatexPreviewModal
+        isOpen={isLatexPreviewOpen}
+        onClose={() => setIsLatexPreviewOpen(false)}
+        latexCode={convertedLatexCode}
+        onConfirm={handleLatexConfirm}
       />
     </div>
   )

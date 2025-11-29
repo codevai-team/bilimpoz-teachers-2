@@ -12,6 +12,7 @@ import Input from '@/components/ui/Input'
 import Select, { SelectOption } from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import TestToolbar from '@/components/teacher/TestToolbar'
+import LatexPreviewModal from '@/components/teacher/LatexPreviewModal'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAI } from '@/hooks/useAI'
 
@@ -94,6 +95,11 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageToLatexInputRef = useRef<HTMLInputElement>(null)
   const { improveText, convertImageToLatex, isLoading: aiLoading } = useAI()
+  
+  // Состояние для модального окна предпросмотра LaTeX
+  const [isLatexPreviewOpen, setIsLatexPreviewOpen] = useState(false)
+  const [convertedLatexCode, setConvertedLatexCode] = useState('')
+  const [latexInsertPosition, setLatexInsertPosition] = useState({ start: 0, end: 0 })
 
   // Обновляем formData при изменении initialData или режима
   useEffect(() => {
@@ -483,26 +489,17 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
     if (!textarea) return
 
     try {
+      // Сохраняем позицию курсора
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      setLatexInsertPosition({ start, end })
+      
       // Конвертируем изображение в LaTeX
       const latexCode = await convertImageToLatex(file)
       
-      // Вставляем LaTeX код в позицию курсора
-      const start = textarea.selectionStart
-      const end = textarea.selectionEnd
-      
-      const newText = 
-        formData.question.substring(0, start) + 
-        latexCode + 
-        formData.question.substring(end)
-      
-      setFormData({ ...formData, question: newText })
-      
-      // Восстанавливаем фокус и позицию курсора
-      setTimeout(() => {
-        textarea.focus()
-        const newPosition = start + latexCode.length
-        textarea.setSelectionRange(newPosition, newPosition)
-      }, 0)
+      // Показываем модальное окно для предпросмотра и редактирования
+      setConvertedLatexCode(latexCode)
+      setIsLatexPreviewOpen(true)
     } catch (error) {
       console.error('Ошибка конвертации изображения:', error)
       alert(getText('questions.form.imageConversionError', 'Ошибка при конвертации изображения'))
@@ -512,6 +509,29 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
         imageToLatexInputRef.current.value = ''
       }
     }
+  }
+
+  // Обработчик подтверждения вставки LaTeX кода
+  const handleLatexConfirm = (latexCode: string) => {
+    const textarea = questionTextareaRef.current
+    if (!textarea) return
+    
+    const { start, end } = latexInsertPosition
+    
+    // Вставляем LaTeX код в позицию курсора
+    const newText = 
+      formData.question.substring(0, start) + 
+      latexCode + 
+      formData.question.substring(end)
+    
+    setFormData({ ...formData, question: newText })
+    
+    // Восстанавливаем фокус и позицию курсора
+    setTimeout(() => {
+      textarea.focus()
+      const newPosition = start + latexCode.length
+      textarea.setSelectionRange(newPosition, newPosition)
+    }, 0)
   }
 
   const handleMagicWand = async () => {
@@ -998,6 +1018,14 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Модальное окно предпросмотра LaTeX */}
+      <LatexPreviewModal
+        isOpen={isLatexPreviewOpen}
+        onClose={() => setIsLatexPreviewOpen(false)}
+        latexCode={convertedLatexCode}
+        onConfirm={handleLatexConfirm}
+      />
     </div>
   )
 }
