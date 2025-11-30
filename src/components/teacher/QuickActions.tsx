@@ -65,16 +65,16 @@ const QuickActions: React.FC<QuickActionsProps> = ({ teacherId, onTabChange }) =
 
   if (!mounted || !ready) {
     return (
-      <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-4 sm:p-5 md:p-6 border border-[var(--border-primary)] shadow-sm">
-        <div className="h-6 skeleton-shimmer rounded w-1/4 mb-4"></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 border border-[var(--border-primary)] shadow-sm">
+        <div className="h-5 sm:h-6 skeleton-shimmer rounded w-1/4 mb-3 sm:mb-4"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="p-3 sm:p-4 rounded-xl bg-[var(--bg-tertiary)]">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 skeleton-shimmer rounded-lg flex-shrink-0"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 skeleton-shimmer rounded w-3/4"></div>
-                  <div className="h-3 skeleton-shimmer rounded w-full"></div>
+            <div key={i} className="p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl bg-[var(--bg-tertiary)]">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 skeleton-shimmer rounded-lg flex-shrink-0"></div>
+                <div className="flex-1 space-y-1.5 sm:space-y-2">
+                  <div className="h-3 sm:h-4 skeleton-shimmer rounded w-3/4"></div>
+                  <div className="h-2.5 sm:h-3 skeleton-shimmer rounded w-full"></div>
                 </div>
               </div>
             </div>
@@ -85,28 +85,22 @@ const QuickActions: React.FC<QuickActionsProps> = ({ teacherId, onTabChange }) =
   }
 
   return (
-    <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm">
-      <div className="pb-2 mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">
-          {getText('quickActions.title', 'Быстрые действия')}
-        </h3>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+    <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
         {actions.map((action, index) => {
           const Icon = action.icon
           return (
             <button
               key={index}
               onClick={action.action}
-              className="p-3 sm:p-4 rounded-xl transition-all duration-300 text-left group relative overflow-hidden hover:bg-[var(--bg-hover)] active:scale-95"
+              className="p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl transition-all duration-300 text-left group relative overflow-hidden bg-[#242424] hover:bg-[#363636] active:scale-95"
             >
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="w-10 h-10 min-w-[2.5rem] flex-shrink-0 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center">
-                  <Icon className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 text-[var(--text-primary)]" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 min-w-[2.25rem] sm:min-w-[2.5rem] flex-shrink-0 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0 text-[var(--text-primary)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm sm:text-base text-[var(--text-primary)] truncate">{action.title}</p>
-                  <p className="text-xs sm:text-sm text-[var(--text-tertiary)] mt-0.5 sm:mt-1 line-clamp-2">{action.description}</p>
+                  <p className="font-bold text-sm sm:text-sm md:text-base text-[var(--text-primary)] truncate">{action.title}</p>
                 </div>
               </div>
             </button>

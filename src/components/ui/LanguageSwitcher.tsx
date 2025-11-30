@@ -101,7 +101,7 @@ export default function LanguageSwitcher() {
           
           {/* Выпадающее меню */}
           <div 
-            className="absolute right-0 mt-1 w-20 bg-[var(--bg-card)] rounded-xl shadow-2xl py-1 z-[60] border border-[var(--border-primary)]"
+            className="absolute right-0 mt-1 min-w-full bg-[var(--bg-card)] rounded-lg shadow-2xl p-1 z-[60] border border-[var(--border-primary)]"
             onClick={(e) => e.stopPropagation()}
           >
             {languages.map((lang) => (
@@ -113,13 +113,12 @@ export default function LanguageSwitcher() {
                   handleLanguageChange(e, lang.code as 'ru' | 'ky');
                 }}
                 className={`
-                  flex items-center justify-center w-full py-1.5 text-sm transition-colors rounded-lg m-1 cursor-pointer font-medium
+                  flex items-center justify-center w-full px-3 py-2 text-sm transition-colors rounded-md cursor-pointer font-medium
                   ${currentLang === lang.code 
                     ? 'bg-[var(--bg-active-button)] text-[var(--text-active-button)]' 
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
                   }
                 `}
-                style={{ width: 'calc(100% - 8px)' }}
               >
                 <span className="text-sm">{lang.name}</span>
               </button>

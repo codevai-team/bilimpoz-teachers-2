@@ -302,99 +302,115 @@ export const DashboardSkeleton: React.FC = () => {
 }
 
 /**
- * Skeleton для страницы Students
+ * Skeleton для страницы Students/Referrals
  */
 export const StudentsPageSkeleton: React.FC = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Заголовок страницы */}
       <div>
-        <Skeleton variant="text" width="30%" height={32} className="mb-2" />
-        <Skeleton variant="text" width="50%" height={20} />
+        <Skeleton variant="text" width="40%" height={28} className="mb-2" />
       </div>
 
       {/* Статистические карточки */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {[...Array(4)].map((_, i) => (
-          <SkeletonStatCard key={i} />
+          <div key={i} className="bg-[var(--bg-tertiary)] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col items-center text-center">
+              <Skeleton variant="rectangular" width={40} height={40} rounded className="mb-2 sm:mb-3" />
+              <Skeleton variant="text" width={40} height={24} className="mb-1 sm:mb-2" />
+              <Skeleton variant="text" width="80%" height={12} />
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Реферальная система */}
-      <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-1 space-y-2">
-            <Skeleton variant="text" width="30%" height={24} />
-            <Skeleton variant="text" width="50%" height={16} />
+      {/* Реферальная система - заголовок */}
+      <Skeleton variant="text" width="50%" height={24} className="mb-2" />
+      
+      {/* Реферальная система - блок */}
+      <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-6">
+        <div className="bg-[var(--bg-tertiary)] rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <Skeleton variant="text" width="40%" height={18} />
+            <Skeleton variant="text" width={120} height={14} />
           </div>
-          <Skeleton variant="rectangular" width={160} height={40} rounded />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex-1 bg-[var(--bg-card)] rounded-lg px-4 py-3 border border-[var(--border-primary)]">
+              <Skeleton variant="text" width="100%" height={16} />
+            </div>
+            <Skeleton variant="rectangular" width={120} height={40} rounded className="flex-shrink-0" />
+          </div>
         </div>
+      </div>
 
-        {/* Статистика реферальной системы */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {/* Способы приглашения - заголовок */}
+      <Skeleton variant="text" width="45%" height={24} className="mb-2" />
+      
+      {/* Способы приглашения - блок */}
+      <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-[var(--bg-tertiary)] rounded-lg p-4 text-center">
-              <Skeleton variant="text" width={100} height={16} className="mx-auto mb-2" />
-              <Skeleton variant="text" width={60} height={32} className="mx-auto" />
+            <div key={i} className="flex items-center gap-3 p-4 bg-[var(--bg-tertiary)] rounded-lg">
+              <Skeleton variant="rectangular" width={36} height={36} rounded />
+              <div className="flex-1 space-y-2">
+                <Skeleton variant="text" width="50%" height={14} />
+                <Skeleton variant="text" width="70%" height={12} />
+              </div>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Реферальная ссылка */}
-        <div className="bg-[var(--bg-tertiary)] rounded-lg p-4 mb-6">
-          <Skeleton variant="text" width="40%" height={20} className="mb-3" />
-          <div className="flex items-center gap-3">
-            <Skeleton variant="text" width="70%" height={40} className="flex-1" />
-            <Skeleton variant="rectangular" width={120} height={40} rounded />
-          </div>
-        </div>
-
-        {/* Способы приглашения */}
-        <div>
-          <Skeleton variant="text" width="35%" height={20} className="mb-4" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-3 bg-[var(--bg-tertiary)] rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Skeleton variant="rectangular" width={40} height={40} rounded />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton variant="text" width="60%" height={16} />
-                    <Skeleton variant="text" width="80%" height={12} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Фильтры - заголовок */}
+      <Skeleton variant="text" width="25%" height={24} className="mb-2" />
+      
+      {/* Фильтры - блок */}
+      <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Skeleton variant="rectangular" width="100%" height={40} rounded className="flex-1" />
+          <Skeleton variant="rectangular" width="100%" height={40} rounded className="flex-1" />
+          <Skeleton variant="rectangular" width={100} height={40} rounded className="flex-shrink-0" />
         </div>
       </div>
 
-      {/* Фильтры */}
-      <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-        <div className="space-y-4">
-          <Skeleton variant="text" width="20%" height={20} />
-          <div className="flex flex-wrap gap-2">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} variant="rectangular" width={120} height={40} rounded />
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Мои рефералы - заголовок */}
+      <Skeleton variant="text" width="35%" height={24} className="mb-2" />
 
-      {/* Список учеников */}
-      <div className="space-y-4">
+      {/* Список рефералов */}
+      <div className="space-y-3 sm:space-y-4">
         {[...Array(3)].map((_, i) => (
-          <SkeletonStudentCard key={i} />
+          <div key={i} className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Skeleton variant="circular" width={48} height={48} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Skeleton variant="text" width="40%" height={18} />
+                  <Skeleton variant="rectangular" width={80} height={20} rounded />
+                </div>
+                <Skeleton variant="text" width="30%" height={14} />
+              </div>
+            </div>
+            {/* Мобильная статистика */}
+            <div className="md:hidden mt-4 pt-4 border-t border-[var(--border-primary)]">
+              <div className="grid grid-cols-3 gap-3">
+                {[...Array(3)].map((_, j) => (
+                  <div key={j} className="text-center">
+                    <Skeleton variant="text" width={30} height={20} className="mx-auto mb-1" />
+                    <Skeleton variant="text" width={50} height={12} className="mx-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Пагинация */}
-      <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] rounded-2xl">
-        <Skeleton variant="text" width={200} height={20} />
-        <div className="flex items-center gap-2">
-          <Skeleton variant="rectangular" width={80} height={36} rounded />
-          <Skeleton variant="rectangular" width={40} height={36} rounded />
-          <Skeleton variant="rectangular" width={80} height={36} rounded />
-        </div>
+      <div className="flex items-center justify-center gap-2 pb-4">
+        <Skeleton variant="rectangular" width={70} height={36} rounded />
+        <Skeleton variant="rectangular" width={36} height={36} rounded />
+        <Skeleton variant="rectangular" width={70} height={36} rounded />
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icons } from '@/components/ui/Icons'
@@ -14,10 +14,15 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pathname = usePathname()
   const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Функция для получения перевода с fallback
   const getLabel = (key: string, fallback: string) => {
-    if (!ready) return fallback
+    if (!mounted || !ready) return fallback
     const translation = t(key)
     return translation === key ? fallback : translation
   }
@@ -26,22 +31,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       href: '/',
       icon: Icons.Home,
-      label: getLabel('sidebar.dashboard', 'Главная'),
+      labelKey: 'sidebar.dashboard',
+      fallback: 'Главная',
     },
     {
       href: '/referrals',
       icon: Icons.Users,
-      label: getLabel('sidebar.students', 'Рефералы'),
+      labelKey: 'sidebar.students',
+      fallback: 'Рефералы',
     },
     {
       href: '/tests',
       icon: Icons.FileText,
-      label: getLabel('sidebar.tests', 'Тесты'),
+      labelKey: 'sidebar.tests',
+      fallback: 'Тесты',
     },
     {
       href: '/settings',
       icon: Icons.Settings,
-      label: getLabel('sidebar.settings', 'Настройки'),
+      labelKey: 'sidebar.settings',
+      fallback: 'Настройки',
     },
   ]
 
@@ -113,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 }`}
               >
                 <Icon className="h-5 w-5 flex-shrink-0" />
-                <span className="text-sm sm:text-base">{item.label}</span>
+                <span className="text-sm sm:text-base">{getLabel(item.labelKey, item.fallback)}</span>
               </Link>
             )
           })}

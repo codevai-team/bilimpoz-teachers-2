@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -11,8 +11,19 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 const Header: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { user, logout } = useAuth()
-  const { t } = useTranslation()
+  const { t, ready } = useTranslation()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Fallback для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
 
   const handleLogout = async () => {
     setShowLogoutDialog(false)
@@ -76,9 +87,9 @@ const Header: React.FC = () => {
                 </div>
               )}
               <div className="text-left min-w-[80px] sm:min-w-[120px] hidden md:block">
-                <p className="text-xs sm:text-sm font-medium text-[var(--text-primary)] truncate">{user?.name || t('common.user')}</p>
+                <p className="text-xs sm:text-sm font-medium text-[var(--text-primary)] truncate">{user?.name || getText('common.user', 'Пользователь')}</p>
                 <p className="text-xs text-[var(--text-tertiary)] truncate">
-                  {user?.role ? t(`roles.${user.role}`) : t('common.roleNotSpecified')}
+                  {user?.role ? getText(`roles.${user.role}`, 'Преподаватель') : getText('common.roleNotSpecified', 'Роль не указана')}
                 </p>
               </div>
               <Icons.ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-[var(--text-tertiary)] hidden md:block" />
@@ -98,7 +109,7 @@ const Header: React.FC = () => {
                     className="w-full px-4 py-2 text-left text-sm text-[var(--accent-danger)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-3"
                   >
                     <Icons.LogOut className="h-4 w-4" />
-                    {t('auth.logout')}
+                    {getText('auth.logout', 'Выйти')}
                   </button>
                 </div>
               </>
@@ -112,10 +123,10 @@ const Header: React.FC = () => {
         isOpen={showLogoutDialog}
         onClose={() => setShowLogoutDialog(false)}
         onConfirm={handleLogout}
-        title={t('auth.confirmLogoutTitle', 'Подтвердите действие')}
-        message={t('auth.confirmLogout', 'Вы уверены, что хотите выйти из системы?')}
-        confirmText={t('auth.logout', 'Выйти')}
-        cancelText={t('common.cancel', 'Отмена')}
+        title={getText('auth.confirmLogoutTitle', 'Подтвердите действие')}
+        message={getText('auth.confirmLogout', 'Вы уверены, что хотите выйти из системы?')}
+        confirmText={getText('auth.logout', 'Выйти')}
+        cancelText={getText('common.cancel', 'Отмена')}
         variant="danger"
       />
     </header>

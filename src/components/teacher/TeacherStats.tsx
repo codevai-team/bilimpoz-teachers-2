@@ -58,14 +58,14 @@ const TeacherStats: React.FC<TeacherStatsProps> = ({ teacherId }) => {
 
   if (!mounted || !ready || loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-[var(--bg-tertiary)] rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 skeleton-shimmer rounded-lg"></div>
-              <div className="h-4 skeleton-shimmer rounded w-3/4"></div>
-          </div>
-            <div className="h-8 skeleton-shimmer rounded w-1/2"></div>
+          <div key={i} className="bg-[var(--bg-tertiary)] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 skeleton-shimmer rounded-xl mb-2 sm:mb-3"></div>
+              <div className="h-6 sm:h-8 skeleton-shimmer rounded w-12 mb-1 sm:mb-2"></div>
+              <div className="h-3 sm:h-4 skeleton-shimmer rounded w-full"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -74,8 +74,11 @@ const TeacherStats: React.FC<TeacherStatsProps> = ({ teacherId }) => {
 
   if (error && !stats) {
     return (
-      <div className="bg-[var(--bg-card)] rounded-2xl p-6 border border-[var(--border-primary)] shadow-sm">
-        <p className="text-red-500 dark:text-red-400">{error}</p>
+      <div className="bg-[var(--bg-tertiary)] rounded-xl p-6 text-center">
+        <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <Icons.AlertCircle className="w-6 h-6 text-red-400" />
+        </div>
+        <p className="text-sm text-red-400">{error}</p>
       </div>
     )
   }
@@ -102,25 +105,30 @@ const TeacherStats: React.FC<TeacherStatsProps> = ({ teacherId }) => {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
       {statCards.map((card, index) => {
         const Icon = card.icon
         return (
           <div
             key={index}
-            className="bg-[var(--bg-tertiary)] rounded-2xl p-6 transition-all"
+            className="bg-[var(--bg-tertiary)] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 transition-all"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-[var(--bg-card)] rounded-lg">
-                <Icon className="h-6 w-6 text-[var(--text-primary)]" />
+            <div className="flex flex-col items-center text-center">
+              {/* Иконка */}
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[var(--bg-card)] flex items-center justify-center mb-2 sm:mb-3">
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-primary)]" />
               </div>
+              
+              {/* Число */}
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-1 sm:mb-2">
+                {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
+              </p>
+              
+              {/* Название */}
+              <h3 className="text-[10px] sm:text-xs md:text-sm font-medium text-[var(--text-tertiary)] leading-tight">
+                {card.title}
+              </h3>
             </div>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mb-1">
-              {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
-            </p>
-            <h3 className="text-sm font-medium text-[var(--text-tertiary)]">
-              {card.title}
-            </h3>
           </div>
         )
       })}

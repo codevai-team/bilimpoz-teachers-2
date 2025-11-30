@@ -1,33 +1,50 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icons } from '@/components/ui/Icons'
+import { useTranslation } from '@/hooks/useTranslation'
 
 const BottomNav: React.FC = () => {
   const pathname = usePathname()
+  const { t, ready } = useTranslation()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Fallback для предотвращения ошибок гидратации
+  const getText = (key: string, fallback: string) => {
+    if (!mounted || !ready) return fallback
+    return t(key)
+  }
 
   const menuItems = [
     {
       href: '/',
       icon: Icons.Home,
-      label: 'Главная',
+      labelKey: 'sidebar.dashboard',
+      fallback: 'Главная',
     },
     {
       href: '/referrals',
       icon: Icons.Users,
-      label: 'Рефералы',
+      labelKey: 'sidebar.students',
+      fallback: 'Рефералы',
     },
     {
       href: '/tests',
       icon: Icons.FileText,
-      label: 'Тесты',
+      labelKey: 'sidebar.tests',
+      fallback: 'Тесты',
     },
     {
       href: '/settings',
       icon: Icons.Settings,
-      label: 'Настройки',
+      labelKey: 'sidebar.settings',
+      fallback: 'Настройки',
     },
   ]
 
@@ -50,9 +67,9 @@ const BottomNav: React.FC = () => {
                   : 'text-[var(--text-tertiary)]'
               }`}
             >
-              <Icon className={`h-5 w-5 mb-1 ${isActive ? 'text-[var(--accent-primary)]' : ''}`} />
-              <span className={`text-[10px] font-medium ${isActive ? 'text-[var(--accent-primary)]' : ''}`}>
-                {item.label}
+              <Icon className={`h-5 w-5 mb-1 ${isActive ? 'text-white' : ''}`} />
+              <span className={`text-[10px] font-medium ${isActive ? 'text-white' : ''}`}>
+                {getText(item.labelKey, item.fallback)}
               </span>
             </Link>
           )

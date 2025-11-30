@@ -438,6 +438,16 @@
     "student": "Окуучу",
     "mentor": "Ментор"
   },
+  "stats": {
+    "testsAdded": "Тесттер кошулду",
+    "testsAddedDesc": "Жалпы түзүлгөн тесттер",
+    "studentsCompleted": "Студенттер тест тапшырды",
+    "studentsCompletedDesc": "Сиздин тесттериңизди тапшырган студенттер",
+    "myReferrals": "Менин рефералдарым",
+    "myReferralsDesc": "Реферал шилтемеңиз боюнча рефералдар",
+    "totalStudents": "Жалпы студенттер",
+    "totalStudentsDesc": "Платформадагы жалпы студенттер"
+  },
   "quickActions": {
     "title": "Тез аракеттер",
     "createTest": "Тест түзүү",
@@ -446,6 +456,41 @@
     "inviteStudentDesc": "Реферал шилтемеси менен бөлүшүңүз",
     "profileSettings": "Профиль жөндөөлөрү",
     "profileSettingsDesc": "Профилиңиздин жөндөөлөрүн өзгөртүңүз"
+  },
+  "activity": {
+    "title": "Акыркы аракеттер",
+    "noActivity": "Аракет жок",
+    "noActivityDesc": "Тест түзүүнү баштаңыз...",
+    "time": {
+      "justNow": "Жаңы эле",
+      "minutesAgo": "мүнөт мурун",
+      "hoursAgo": "саат мурун",
+      "daysAgo": "күн мурун"
+    },
+    "testCreated": {
+      "title": "Тест түзүлдү",
+      "description": "Тест түзүлүп сакталды"
+    },
+    "studentJoined": {
+      "title": "Студент кошулду",
+      "description": "Жаңы студент катталды"
+    },
+    "testCompleted": {
+      "title": "Тест тапшырылды",
+      "description": "Студент тестти аяктады"
+    },
+    "questionsAdded": {
+      "title": "Суроолор кошулду",
+      "description": "Тестке суроолор кошулду"
+    },
+    "testDuplicated": {
+      "title": "Тест көчүрүлдү",
+      "description": "Тест көчүрүлдү"
+    },
+    "testPublished": {
+      "title": "Тест жарыяланды",
+      "description": "Тест студенттерге жеткиликтүү болду"
+    }
   },
   "verification": {
     "modal": {
