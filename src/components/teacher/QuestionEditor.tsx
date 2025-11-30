@@ -33,8 +33,10 @@ interface QuestionEditorProps {
   aiExplanation?: string
   isPreviewMode?: boolean
   onFormatRegister?: (handler: (format: string) => void) => void
+  onFocus?: () => void
   onRegenerateExplanation?: () => void
   onAiLoadingChange?: (questionId: string, isLoading: boolean) => void
+  onShowToast?: (message: string, variant: 'success' | 'error' | 'warning' | 'info', title?: string) => void
   validationError?: string | null
   isRegeneratingExplanation?: boolean
 }
@@ -50,8 +52,10 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
   aiExplanation = '',
   isPreviewMode: externalPreviewMode = false,
   onFormatRegister,
+  onFocus,
   onRegenerateExplanation,
   onAiLoadingChange,
+  onShowToast,
   validationError: externalValidationError,
   isRegeneratingExplanation = false
 }) => {
@@ -372,7 +376,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       textarea = questionTextareaRef.current
       if (!textarea) {
         console.error('❌ textarea для вопроса не найден')
-        alert('Ошибка: поле вопроса не найдено')
+        onShowToast?.('Ошибка: поле вопроса не найдено', 'error', 'Ошибка!')
         return
       }
       start = textarea.selectionStart
@@ -386,7 +390,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       
       if (!answerTextarea) {
         console.error('❌ textarea для ответа не найден', { answerIndex, questionId })
-        alert(`Ошибка: поле ответа ${answerIndex + 1} не найдено`)
+        onShowToast?.(`Ошибка: поле ответа ${answerIndex + 1} не найдено`, 'error', 'Ошибка!')
         return
       }
       textarea = answerTextarea
@@ -402,21 +406,37 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     }
 
     const selectedText = currentText.substring(start, end).trim()
-    console.log('✂️ Выделенный текст:', { selectedText, length: selectedText.length })
+    console.log('✂️ Выделенный текст:', { 
+      selectedText: selectedText.substring(0, 100), 
+      length: selectedText.length,
+      start,
+      end,
+      currentTextLength: currentText.length,
+      rawSelection: currentText.substring(start, end)
+    })
 
-    if (!selectedText) {
-      alert(getText('testEditor.errors.selectTextToImprove', 'Выделите текст, который нужно улучшить'))
+    if (!selectedText || start === end) {
+      onShowToast?.(
+        getText('testEditor.errors.selectTextToImprove', 'Выделите текст, который нужно улучшить'),
+        'warning',
+        'Внимание!'
+      )
       return
     }
 
     if (!improveText) {
       console.error('❌ improveText функция недоступна')
-      alert(getText('testEditor.errors.aiNotAvailable', 'AI функция недоступна. Проверьте настройки OpenAI API.'))
+      onShowToast?.(
+        getText('testEditor.errors.aiNotAvailable', 'AI функция недоступна. Проверьте настройки OpenAI API.'),
+        'error',
+        'Ошибка!'
+      )
       return
     }
     
     console.log('✅ Начинаем улучшение текста...')
 
+    console.log('🔄 Устанавливаем состояние загрузки для questionId:', questionId)
     setAiLoading(true)
     onAiLoadingChange?.(questionId, true)
     try {
@@ -494,8 +514,13 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     } catch (error) {
       console.error('❌ Ошибка улучшения текста:', error)
       const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка'
-      alert(`${getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста')}: ${errorMessage}`)
+      onShowToast?.(
+        `${getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста')}: ${errorMessage}`,
+        'error',
+        'Ошибка!'
+      )
     } finally {
+      console.log('🔄 Сбрасываем состояние загрузки для questionId:', questionId)
       setAiLoading(false)
       onAiLoadingChange?.(questionId, false)
       console.log('🏁 Завершено улучшение текста')
@@ -613,7 +638,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         
         // Проверяем, есть ли выделение
         if (start === end) {
-          alert('Выделите текст, который нужно улучшить')
+          onShowToast?.('Выделите текст, который нужно улучшить', 'warning', 'Внимание!')
           setSavedTextareaSelection(null)
           return
         }
@@ -626,14 +651,14 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           handleMagicWand('answer', answerIndex)
         } else {
           console.error('❌ Не удалось определить тип поля')
-          alert('Ошибка: не удалось определить активное поле')
+          onShowToast?.('Ошибка: не удалось определить активное поле', 'error', 'Ошибка!')
         }
         
         // Очищаем сохраненное выделение после использования
         setSavedTextareaSelection(null)
       } else {
         console.error('❌ textarea не найден')
-        alert('Выберите поле для улучшения текста')
+        onShowToast?.('Выберите поле для улучшения текста', 'warning', 'Внимание!')
       }
       return
     }
@@ -998,6 +1023,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       return
     }
 
+    console.log('🔄 Устанавливаем состояние загрузки для questionId:', questionId)
     setAiLoading(true)
     onAiLoadingChange?.(questionId, true)
     try {
@@ -1324,6 +1350,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                 className="w-full px-5 py-4 rounded-xl text-[var(--text-primary)] placeholder-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--border-primary)] transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)] resize-none text-sm font-mono"
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}
+                onFocus={() => onFocus?.()}
                 onSelect={(e) => {
                   const target = e.target as HTMLTextAreaElement
                   setCursorPosition({ start: target.selectionStart, end: target.selectionEnd })
@@ -1425,6 +1452,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                         style={{ height: `${answerHeights[index] || 60}px` }}
                         value={answer.value}
                         onChange={(e) => handleAnswerChange(index, e.target.value)}
+                        onFocus={() => onFocus?.()}
                         placeholder={`${getText('tests.answer', 'Ответ')} ${index + 1}`}
                         className="w-full px-4 py-3 rounded-xl text-[var(--text-primary)] placeholder-[var(--text-tertiary)] bg-[var(--bg-card)] border border-[var(--border-primary)] transition-all duration-300 ease-in-out focus:outline-none focus:border-[var(--text-primary)] focus:bg-[var(--bg-tertiary)] hover:border-[var(--border-primary)] resize-none text-sm font-mono"
                       />
@@ -1433,7 +1461,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
                         <button
                           type="button"
                           onClick={() => toggleTextVersion('answer', index)}
-                          className="absolute bottom-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
+                          className="absolute top-2 right-14 flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 rounded-lg transition-colors text-xs font-medium z-10"
                           title={textVersions.answers[index].isShowingImproved ? 'Показать оригинал' : 'Показать улучшенный'}
                         >
                           <Icons.ArrowLeft className="h-3.5 w-3.5" />

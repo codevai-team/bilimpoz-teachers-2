@@ -127,6 +127,7 @@ export default function TestEditorPage() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const formatHandlersRef = useRef<Record<string, (format: string) => void>>({})
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ isOpen: boolean; title?: string; message: string; variant: ToastVariant }>({
     isOpen: false,
     message: '',
@@ -337,10 +338,15 @@ export default function TestEditorPage() {
 
   // Обработчики для TestToolbar
   const handleFormat = (action: string) => {
-    // Находим активный QuestionEditor и применяем форматирование
-    const activeQuestionId = Object.keys(formatHandlersRef.current)[0]
+    // Применяем форматирование к активному вопросу
     if (activeQuestionId && formatHandlersRef.current[activeQuestionId]) {
       formatHandlersRef.current[activeQuestionId](action)
+    } else {
+      // Fallback: если активный вопрос не определен, используем первый доступный
+      const firstQuestionId = Object.keys(formatHandlersRef.current)[0]
+      if (firstQuestionId && formatHandlersRef.current[firstQuestionId]) {
+        formatHandlersRef.current[firstQuestionId](action)
+      }
     }
   }
 
@@ -354,6 +360,14 @@ export default function TestEditorPage() {
 
   const handleUnregisterFormat = (questionId: string) => {
     delete formatHandlersRef.current[questionId]
+    // Если удаляемый вопрос был активным, сбрасываем активный вопрос
+    if (activeQuestionId === questionId) {
+      setActiveQuestionId(null)
+    }
+  }
+
+  const handleQuestionFocus = (questionId: string) => {
+    setActiveQuestionId(questionId)
   }
 
   const handleOpenImageLatex = () => {
@@ -661,7 +675,7 @@ export default function TestEditorPage() {
       console.log('✂️ Выделение в textarea:', { start, end, selectedText: selectedText.substring(0, 50), length: selectedText.length })
       
       if (!selectedText || start === end) {
-        alert('Выделите текст, который нужно улучшить')
+        showToast('Выделите текст, который нужно улучшить', 'warning', 'Внимание!')
         return
       }
 
@@ -680,17 +694,12 @@ export default function TestEditorPage() {
         // Вызываем улучшение через форматтер
         formatHandlersRef.current[questionId]('magic-wand')
       } else {
-        console.error('❌ QuestionId не найден или форматтер не зарегистрирован', { 
-          questionId, 
-          handlers: Object.keys(formatHandlersRef.current),
-          activeElement: activeElement.tagName,
-          parent: textarea.closest('[data-question-id]')?.getAttribute('data-question-id')
-        })
-        alert('Ошибка: не удалось найти активный вопрос. Убедитесь, что вы находитесь в поле вопроса или ответа.')
+        // QuestionId не найден - показываем уведомление пользователю
+        showToast('Не удалось найти активный вопрос. Убедитесь, что вы находитесь в поле вопроса или ответа.', 'warning', 'Внимание!')
       }
     } else {
-      console.error('❌ Активный элемент не является textarea', { activeElement: activeElement?.tagName })
-      alert('Выберите поле для улучшения текста')
+      // Активный элемент не является textarea - это нормальная ситуация, просто показываем уведомление
+      showToast('Выберите поле для улучшения текста', 'warning', 'Внимание!')
     }
   }
 
@@ -1917,6 +1926,8 @@ export default function TestEditorPage() {
                       aiExplanation={aiExplanations[question.id] || ''}
                       isPreviewMode={isPreviewMode}
                       onFormatRegister={(handler) => handleRegisterFormat(question.id, handler)}
+                      onFocus={() => handleQuestionFocus(question.id)}
+                      onShowToast={showToast}
                       onAiLoadingChange={(questionId, isLoading) => {
                         setAiLoadingStates(prev => ({
                           ...prev,
@@ -2061,7 +2072,11 @@ export default function TestEditorPage() {
             onMagicWand={handleMagicWand}
             onSaveSelection={handleSaveSelection}
             onExplainQuestion={handleExplainQuestion}
-            isAiLoading={selectedQuestionId ? (aiLoadingStates[selectedQuestionId] || false) : false}
+            isAiLoading={(() => {
+              const isLoading = activeQuestionId ? (aiLoadingStates[activeQuestionId] || false) : false
+              console.log('🔄 TestToolbar isAiLoading:', { activeQuestionId, aiLoadingStates, isLoading })
+              return isLoading
+            })()}
             isImageConverting={isAiConverting}
           />
           

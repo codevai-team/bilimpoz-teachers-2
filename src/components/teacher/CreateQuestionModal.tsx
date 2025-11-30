@@ -13,6 +13,7 @@ import Select, { SelectOption } from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import TestToolbar from '@/components/teacher/TestToolbar'
 import LatexPreviewModal from '@/components/teacher/LatexPreviewModal'
+import Toast, { ToastVariant } from '@/components/ui/Toast'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAI } from '@/hooks/useAI'
 
@@ -95,6 +96,11 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageToLatexInputRef = useRef<HTMLInputElement>(null)
   const { improveText, convertImageToLatex, isLoading: aiLoading } = useAI()
+  const [toast, setToast] = useState<{ isOpen: boolean; title?: string; message: string; variant: ToastVariant }>({
+    isOpen: false,
+    message: '',
+    variant: 'success'
+  })
   
   // Состояние для модального окна предпросмотра LaTeX
   const [isLatexPreviewOpen, setIsLatexPreviewOpen] = useState(false)
@@ -545,7 +551,12 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
 
     if (!selectedText) {
       // Если ничего не выделено, показываем подсказку
-      alert(getText('testEditor.errors.selectTextToImprove', 'Выделите текст, который нужно улучшить'))
+      setToast({
+        isOpen: true,
+        title: 'Внимание!',
+        message: getText('testEditor.errors.selectTextToImprove', 'Выделите текст, который нужно улучшить'),
+        variant: 'warning'
+      })
       return
     }
 
@@ -572,7 +583,12 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
     }, 0)
     } catch (error) {
       console.error('Ошибка улучшения текста:', error)
-      alert(getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста'))
+      setToast({
+        isOpen: true,
+        title: 'Ошибка!',
+        message: getText('testEditor.errors.improvementError', 'Ошибка при улучшении текста'),
+        variant: 'error'
+      })
     }
   }
 
@@ -1018,6 +1034,16 @@ const CreateQuestionModal: React.FC<CreateQuestionModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Toast уведомления */}
+      <Toast
+        isOpen={toast.isOpen}
+        onClose={() => setToast({ ...toast, isOpen: false })}
+        title={toast.title}
+        message={toast.message}
+        variant={toast.variant}
+        duration={4000}
+      />
 
       {/* Модальное окно предпросмотра LaTeX */}
       <LatexPreviewModal

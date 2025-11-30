@@ -323,6 +323,14 @@ export default function TestsPage() {
         removeTestStatus(testToDelete)
         removeTestQuestions(testToDelete)
         setTests(tests.filter(t => t.id !== testToDelete))
+        
+        // Показываем уведомление об успешном удалении
+        setToast({
+          isOpen: true,
+          title: 'Удалено!',
+          message: getText('tests.testDeleted', 'Тест успешно удален'),
+          variant: 'success'
+        })
       } else {
         // Удаляем из БД
         const response = await fetch(`/api/teacher/tests/${testToDelete}`, {
@@ -331,15 +339,36 @@ export default function TestsPage() {
 
         if (response.ok) {
           setTests(tests.filter(t => t.id !== testToDelete))
+          
+          // Показываем уведомление об успешном удалении
+          setToast({
+            isOpen: true,
+            title: 'Удалено!',
+            message: getText('tests.testDeleted', 'Тест успешно удален'),
+            variant: 'success'
+          })
         } else {
-          const errorText = getText('tests.deleteError', 'Ошибка при удалении теста')
-          alert(errorText)
+          const errorData = await response.json().catch(() => ({}))
+          const errorText = errorData.error || getText('tests.deleteError', 'Ошибка при удалении теста')
+          
+          setToast({
+            isOpen: true,
+            title: 'Ошибка!',
+            message: errorText,
+            variant: 'error'
+          })
         }
       }
     } catch (error) {
       console.error('Ошибка удаления теста:', error)
       const errorText = getText('tests.deleteError', 'Ошибка при удалении теста')
-      alert(errorText)
+      
+      setToast({
+        isOpen: true,
+        title: 'Ошибка!',
+        message: errorText,
+        variant: 'error'
+      })
     } finally {
       setIsDeleting(false)
       setShowDeleteConfirm(false)

@@ -37,20 +37,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initialTheme = getInitialTheme()
     setTheme(initialTheme)
     document.documentElement.setAttribute('data-theme', initialTheme)
-    setIsInitialized(true)
+        setIsInitialized(true)
   }, [])
 
   const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    try {
-      localStorage.setItem('bilimpoz-theme', newTheme)
-      if (typeof window !== 'undefined') {
-        document.documentElement.setAttribute('data-theme', newTheme)
+      const newTheme = theme === 'light' ? 'dark' : 'light'
+      setTheme(newTheme)
+      try {
+        localStorage.setItem('bilimpoz-theme', newTheme)
+        if (typeof window !== 'undefined') {
+          document.documentElement.setAttribute('data-theme', newTheme)
+        }
+      } catch (error) {
+        console.error('Failed to save theme:', error)
       }
-    } catch (error) {
-      console.error('Failed to save theme:', error)
-    }
   }, [theme])
 
   return (
