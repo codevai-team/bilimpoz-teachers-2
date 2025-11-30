@@ -436,7 +436,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     
     console.log('✅ Начинаем улучшение текста...')
 
-    console.log('🔄 Устанавливаем состояние загрузки для questionId:', questionId)
     setAiLoading(true)
     onAiLoadingChange?.(questionId, true)
     try {
@@ -520,7 +519,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
         'Ошибка!'
       )
     } finally {
-      console.log('🔄 Сбрасываем состояние загрузки для questionId:', questionId)
       setAiLoading(false)
       onAiLoadingChange?.(questionId, false)
       console.log('🏁 Завершено улучшение текста')
@@ -1023,7 +1021,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
       return
     }
 
-    console.log('🔄 Устанавливаем состояние загрузки для questionId:', questionId)
     setAiLoading(true)
     onAiLoadingChange?.(questionId, true)
     try {

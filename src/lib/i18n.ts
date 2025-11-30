@@ -23,13 +23,21 @@ if (!i18n.isInitialized) {
     .init({
       resources,
       fallbackLng: 'ru',
-      debug: process.env.NODE_ENV === 'development',
+      debug: false, // Отключаем отладочные сообщения
       
       // Возвращаем ключ, если перевод не найден (по умолчанию)
       // Но мы обрабатываем это в компонентах через fallback
       returnNull: false,
       returnEmptyString: false,
       returnObjects: false,
+      
+      // Отключаем предупреждения о missingKey в консоли
+      saveMissing: false,
+      updateMissing: false,
+      missingKeyHandler: (lngs: string[], ns: string, key: string) => {
+        // Не выводим предупреждения в консоль, просто возвращаем ключ
+        return key;
+      },
       
       interpolation: {
         escapeValue: false, // React уже экранирует значения

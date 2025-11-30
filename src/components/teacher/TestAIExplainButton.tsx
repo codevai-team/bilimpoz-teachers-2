@@ -59,7 +59,6 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
     
     const questionData = loadQuestionDraft(blockId, testType as QuestionType)
     const hasExp = !!(questionData?.explanation_ai && questionData.explanation_ai.trim())
-    console.log('Checking explanation for:', { blockId, testType, hasExp, explanation: questionData?.explanation_ai?.substring(0, 50) })
     return hasExp
   }, [blockId, testType])
 
@@ -67,11 +66,8 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
   useEffect(() => {
     if (!mounted || typeof window === 'undefined' || !testType || !blockId) return
     
-    console.log('Loading question data for:', { blockId, testType })
-    
     const hasExp = checkHasExplanation()
     setHasExplanation(hasExp)
-    console.log('Has explanation set to:', hasExp)
   }, [mounted, blockId, testType, checkHasExplanation])
 
   // Периодическая синхронизация с localStorage для отслеживания изменений
@@ -83,24 +79,20 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
       setHasExplanation(hasExp)
     }
     
-    // Проверяем каждые 1000мс для синхронизации с изменениями
-    const interval = setInterval(syncWithLocalStorage, 1000)
+    // Проверяем каждые 5000мс для синхронизации с изменениями
+    const interval = setInterval(syncWithLocalStorage, 5000)
     
     return () => clearInterval(interval)
   }, [mounted, blockId, testType, checkHasExplanation])
 
   // Генерация объяснения
   const generateExplanation = async () => {
-    console.log('=== Starting generateExplanation ===')
-    console.log('Initial state:', { blockId, testType, question, answers })
-    
     // Всегда загружаем свежие данные из localStorage
     let questionToUse = ''
     let answersToUse: AnswerVariant[] = []
     
     if (typeof window !== 'undefined' && testType) {
       const questionData = loadQuestionDraft(blockId, testType as QuestionType)
-      console.log('Loaded from localStorage:', questionData)
       
       if (questionData) {
         questionToUse = questionData.question || ''
@@ -111,14 +103,10 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
     // Если из localStorage ничего не получили, используем пропсы
     if (!questionToUse && question) {
       questionToUse = question
-      console.log('Using question from props:', questionToUse)
     }
     if (answersToUse.length === 0 && answers && answers.length > 0) {
       answersToUse = answers
-      console.log('Using answers from props:', answersToUse)
     }
-    
-    console.log('Final data to use:', { questionToUse, answersToUse })
     
     // Валидация
     if (!questionToUse || !questionToUse.trim()) {
@@ -156,8 +144,6 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
       return null
     }
     
-    console.log('Validation passed!')
-
     setIsLoading(true)
     try {
       // Подготовка данных
@@ -194,7 +180,6 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
         throw new Error('Пустое объяснение от API')
       }
       
-      console.log('AI explanation received:', aiExplanation.substring(0, 100))
 
       // Сохранение в localStorage через saveQuestionDraft
       if (typeof window !== 'undefined' && testType) {
@@ -265,36 +250,20 @@ const TestAIExplainButton: React.FC<TestAIExplainButtonProps> = ({
     e.preventDefault()
     e.stopPropagation()
     
-    console.log('TestAIExplainButton clicked:', {
-      blockId,
-      isShowingExplanation,
-      hasExplanation,
-      testType
-    })
-    
     // Если показывается объяснение, то скрываем его
     if (isShowingExplanation) {
-      console.log('Hiding explanation')
       onToggleExplanation()
       return
     }
 
     // Если объяснение уже есть, показываем его
     if (hasExplanation) {
-      console.log('Showing existing explanation')
       onToggleExplanation()
       return
     }
 
     // Если объяснения нет, генерируем его
-    console.log('Generating new explanation')
-    const result = await generateExplanation()
-    if (result) {
-      // Объяснение уже показывается автоматически в generateExplanation
-      console.log('Explanation generated successfully:', result.substring(0, 50))
-    } else {
-      console.error('Failed to generate explanation')
-    }
+    await generateExplanation()
   }
 
   // Определение tooltip

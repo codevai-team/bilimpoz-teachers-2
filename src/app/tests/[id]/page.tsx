@@ -2072,11 +2072,7 @@ export default function TestEditorPage() {
             onMagicWand={handleMagicWand}
             onSaveSelection={handleSaveSelection}
             onExplainQuestion={handleExplainQuestion}
-            isAiLoading={(() => {
-              const isLoading = activeQuestionId ? (aiLoadingStates[activeQuestionId] || false) : false
-              console.log('🔄 TestToolbar isAiLoading:', { activeQuestionId, aiLoadingStates, isLoading })
-              return isLoading
-            })()}
+            isAiLoading={activeQuestionId ? (aiLoadingStates[activeQuestionId] || false) : false}
             isImageConverting={isAiConverting}
           />
           

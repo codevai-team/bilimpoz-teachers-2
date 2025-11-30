@@ -52,6 +52,8 @@ export default function TestsPage() {
     message: '',
     variant: 'success'
   })
+  const [isPeriodExpanded, setIsPeriodExpanded] = useState(false)
+  const [isDateRangeExpanded, setIsDateRangeExpanded] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -403,17 +405,18 @@ export default function TestsPage() {
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">
               {getText('tests.title', 'Тесты')}
             </h1>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1">
+            <p className="text-sm text-[var(--text-tertiary)] mt-1 whitespace-pre-line">
               {getText('tests.subtitle', 'Создавайте и управляйте тестами для ваших студентов')}
             </p>
           </div>
           <Button
             onClick={handleCreateTest}
             variant="primary"
-            className="flex items-center gap-2"
+            className="flex items-center gap-1.5 md:gap-2 text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
           >
-            <Icons.Plus className="h-5 w-5" />
-            {getText('tests.createTest', 'Создать тест')}
+            <Icons.Plus className="h-4 w-4 md:h-5 md:w-5" />
+            <span className="hidden sm:inline">{getText('tests.createTest', 'Создать тест')}</span>
+            <span className="sm:hidden">{getText('tests.create', 'Создать')}</span>
           </Button>
         </div>
 
@@ -466,64 +469,113 @@ export default function TestsPage() {
 
           {/* Период */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
-              {getText('questions.period', 'Период')}:
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'today', label: getText('dashboard.today', 'Сегодня') },
-                { value: 'yesterday', label: getText('dashboard.yesterday', 'Вчера') },
-                { value: 'week', label: getText('dashboard.week', 'Неделя') },
-                { value: 'month', label: getText('dashboard.month', 'Месяц') }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handlePeriodChange(option.value)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    period === option.value
-                      ? 'bg-[var(--bg-active)] text-[var(--text-primary)]'
-                      : 'bg-[var(--bg-select)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-[var(--text-secondary)]">
+                {getText('questions.period', 'Период')}:
+              </label>
+              {/* Кнопка сворачивания/разворачивания для мобильной версии */}
+              <button
+                onClick={() => setIsPeriodExpanded(!isPeriodExpanded)}
+                className="md:hidden flex items-center gap-1 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {isPeriodExpanded ? (
+                  <>
+                    <Icons.ChevronDown className="h-4 w-4 rotate-180" />
+                    <span>{getText('common.hide', 'Скрыть')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.ChevronDown className="h-4 w-4" />
+                    <span>{getText('common.show', 'Показать')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+            {/* Контент - скрыт на мобильных, если не развернут */}
+            <div className={`${isPeriodExpanded ? 'block' : 'hidden'} md:block`}>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'today', label: getText('dashboard.today', 'Сегодня') },
+                  { value: 'yesterday', label: getText('dashboard.yesterday', 'Вчера') },
+                  { value: 'week', label: getText('dashboard.week', 'Неделя') },
+                  { value: 'month', label: getText('dashboard.month', 'Месяц') }
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handlePeriodChange(option.value)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      period === option.value
+                        ? 'bg-[var(--bg-active)] text-[var(--text-primary)]'
+                        : 'bg-[var(--bg-select)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Диапазон дат */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* От даты */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
-                {getText('questions.fromDate', 'От даты')}:
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-[var(--text-secondary)]">
+                {getText('questions.dateRange', 'Диапазон дат')}:
               </label>
-              <div className="space-y-3">
-                <CustomDatePicker
-                  value={dateFrom}
-                  onChange={setDateFrom}
-                />
-                <CustomTimePicker
-                  value={timeFrom}
-                  onChange={setTimeFrom}
-                />
-              </div>
+              {/* Кнопка сворачивания/разворачивания для мобильной версии */}
+              <button
+                onClick={() => setIsDateRangeExpanded(!isDateRangeExpanded)}
+                className="md:hidden flex items-center gap-1 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {isDateRangeExpanded ? (
+                  <>
+                    <Icons.ChevronDown className="h-4 w-4 rotate-180" />
+                    <span>{getText('common.hide', 'Скрыть')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.ChevronDown className="h-4 w-4" />
+                    <span>{getText('common.show', 'Показать')}</span>
+                  </>
+                )}
+              </button>
             </div>
+            {/* Контент - скрыт на мобильных, если не развернут */}
+            <div className={`${isDateRangeExpanded ? 'block' : 'hidden'} md:block`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* От даты */}
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
+                    {getText('questions.fromDate', 'От даты')}:
+                  </label>
+                  <div className="space-y-3">
+                    <CustomDatePicker
+                      value={dateFrom}
+                      onChange={setDateFrom}
+                    />
+                    <CustomTimePicker
+                      value={timeFrom}
+                      onChange={setTimeFrom}
+                    />
+                  </div>
+                </div>
 
-            {/* До даты */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
-                {getText('questions.toDate', 'До даты')}:
-              </label>
-              <div className="space-y-3">
-                <CustomDatePicker
-                  value={dateTo}
-                  onChange={setDateTo}
-                />
-                <CustomTimePicker
-                  value={timeTo}
-                  onChange={setTimeTo}
-                />
+                {/* До даты */}
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
+                    {getText('questions.toDate', 'До даты')}:
+                  </label>
+                  <div className="space-y-3">
+                    <CustomDatePicker
+                      value={dateTo}
+                      onChange={setDateTo}
+                    />
+                    <CustomTimePicker
+                      value={timeTo}
+                      onChange={setTimeTo}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -558,7 +610,7 @@ export default function TestsPage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 pb-[calc(var(--bottom-nav-height)+var(--safe-area-bottom)+16px)] lg:pb-0">
             {filteredTests.map((test) => (
               <div
                 key={test.id}
