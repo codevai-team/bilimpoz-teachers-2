@@ -249,7 +249,7 @@ export default function SettingsPage() {
 
   return (
     <TeacherLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-5 md:space-y-6 pb-12 sm:pb-14 lg:pb-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--text-primary)]"></div>
@@ -257,30 +257,23 @@ export default function SettingsPage() {
         ) : (
           <>
         {/* Заголовок страницы */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
-              {getText('settings.title', 'Настройки')}
-            </h1>
-            <p className="text-[var(--text-tertiary)]">
-              {getText('settings.description', 'Управление профилем и персональными настройками')}
-            </p>
-          </div>
-          
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
           {!isEditing ? (
             <Button
               variant="primary"
               onClick={() => setIsEditing(true)}
+              className="w-full sm:w-auto"
             >
               <Icons.Edit className="h-4 w-4 mr-2" />
               {getText('settings.edit', 'Редактировать')}
             </Button>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="secondary"
                 onClick={handleCancel}
                 disabled={isSaving}
+                className="flex-1 sm:flex-none"
               >
                 {getText('settings.cancel', 'Отмена')}
               </Button>
@@ -288,6 +281,7 @@ export default function SettingsPage() {
                 variant="primary"
                 onClick={handleSave}
                 isLoading={isSaving}
+                className="flex-1 sm:flex-none"
               >
                 <Icons.Save className="h-4 w-4 mr-2" />
                 {getText('settings.save', 'Сохранить')}
@@ -296,15 +290,14 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {/* Сетка блоков настроек 2x2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Сетка блоков настроек */}
+        <div className="space-y-4 sm:space-y-5 md:space-y-6">
           {/* Основная информация */}
-          <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mb-4 sm:mb-5">
               {getText('settings.basicInfo', 'Основная информация')}
-            </h3>
-            
-            <div className="space-y-6">
+            </h1>
+            <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6">
               {/* Фото профиля */}
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-4">
@@ -361,12 +354,11 @@ export default function SettingsPage() {
           </div>
 
           {/* Настройки интерфейса */}
-          <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mb-4 sm:mb-5">
               {getText('settings.interface', 'Настройки интерфейса')}
-            </h3>
-            
-            <div className="space-y-6">
+            </h1>
+            <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6">
               {/* Тема */}
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -411,12 +403,11 @@ export default function SettingsPage() {
           </div>
 
           {/* Социальные сети */}
-          <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mb-4 sm:mb-5">
               {getText('settings.socialNetworks', 'Социальные сети')}
-            </h3>
-            
-            <div className="space-y-6">
+            </h1>
+            <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6">
               {/* Telegram */}
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -474,12 +465,11 @@ export default function SettingsPage() {
           </div>
 
           {/* Смена пароля */}
-          <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mb-4 sm:mb-5">
               {getText('settings.changePassword', 'Смена пароля')}
-            </h3>
-            
-            <div className="space-y-6">
+            </h1>
+            <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   {getText('settings.currentPassword', 'Текущий пароль')}
@@ -538,23 +528,24 @@ export default function SettingsPage() {
         </div>
 
         {/* Выход из системы */}
-        <div className="bg-[var(--bg-card)] rounded-2xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-                {getText('settings.logout', 'Выход из системы')}
-              </h3>
-              <p className="text-[var(--text-tertiary)]">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mb-4 sm:mb-5">
+            {getText('settings.logout', 'Выход из системы')}
+          </h1>
+          <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+              <p className="text-sm sm:text-base text-[var(--text-tertiary)]">
                 {getText('settings.logoutDescription', 'Завершить текущий сеанс работы')}
               </p>
+              <Button
+                variant="danger"
+                onClick={() => setShowLogoutDialog(true)}
+                className="w-full sm:w-auto"
+              >
+                <Icons.LogOut className="h-4 w-4 mr-2" />
+                {getText('settings.logoutButton', 'Выйти')}
+              </Button>
             </div>
-            <Button
-              variant="danger"
-              onClick={() => setShowLogoutDialog(true)}
-            >
-              <Icons.LogOut className="h-4 w-4 mr-2" />
-              {getText('settings.logoutButton', 'Выйти')}
-            </Button>
           </div>
         </div>
           </>

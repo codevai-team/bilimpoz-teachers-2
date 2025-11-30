@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Icons } from '@/components/ui/Icons'
 import { useTranslation } from '@/hooks/useTranslation'
 
@@ -24,8 +24,6 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ teacherId }) => {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [itemsPerPage, setItemsPerPage] = useState(5)
-  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     setMounted(true)
@@ -79,111 +77,56 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ teacherId }) => {
     return `${days} ${getText('activity.time.daysAgo', 'дней назад')}`
   }
 
-  const totalPages = Math.ceil(activities.length / itemsPerPage)
-  const paginatedActivities = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    const end = start + itemsPerPage
-    return activities.slice(start, end)
-  }, [activities, currentPage, itemsPerPage])
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page)
-    }
-  }
+  // Берём только последние 5 действий
+  const recentActivities = activities.slice(0, 5)
 
   if (!mounted || !ready || loading) {
     return (
-      <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-4 sm:p-5 md:p-6 border border-[var(--border-primary)] shadow-sm">
-        <div className="h-6 skeleton-shimmer rounded w-1/3 mb-4"></div>
-        <div className="space-y-3 sm:space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-3">
-              <div className="w-10 h-10 skeleton-shimmer rounded-lg flex-shrink-0"></div>
+      <div className="space-y-2 sm:space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 skeleton-shimmer rounded-xl flex-shrink-0"></div>
               <div className="flex-1 space-y-2">
-                <div className="h-4 skeleton-shimmer rounded w-3/4"></div>
-                <div className="h-3 skeleton-shimmer rounded w-1/2"></div>
+                <div className="flex items-center justify-between">
+                  <div className="h-4 sm:h-5 skeleton-shimmer rounded w-1/2"></div>
+                  <div className="h-3 skeleton-shimmer rounded w-16"></div>
+                </div>
+                <div className="h-3 sm:h-4 skeleton-shimmer rounded w-3/4"></div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     )
   }
 
   if (error && activities.length === 0) {
     return (
-      <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-4 sm:p-5 md:p-6 border border-[var(--border-primary)] shadow-sm text-center">
-        <p className="text-sm sm:text-base text-red-500 dark:text-red-400">{error}</p>
+      <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-6 text-center">
+        <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <Icons.AlertCircle className="w-6 h-6 text-red-400" />
+        </div>
+        <p className="text-sm text-red-400">{error}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-[var(--bg-card)] rounded-xl md:rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm">
-      <div className="pb-2 mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <h3 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">
-            {getText('activity.title', 'Последняя активность')}
-          </h3>
-          
-          {/* Пагинация */}
-          {activities.length > 0 && (
-          <div className="flex items-center space-x-2 self-end sm:self-auto">
-            {/* Селектор количества */}
-            <div className="relative">
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value))
-                  setCurrentPage(1)
-                }}
-                className="px-2 py-1 text-xs sm:text-sm bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-              </select>
-            </div>
-            
-            {/* Кнопки навигации */}
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="p-1 rounded hover:bg-[var(--bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Предыдущая страница"
-            >
-              <Icons.ChevronLeft className="w-4 h-4 text-[var(--text-primary)]" />
-            </button>
-            <span className="text-xs sm:text-sm text-[var(--text-tertiary)] min-w-[3rem] text-center">
-              {currentPage} / {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="p-1 rounded hover:bg-[var(--bg-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Следующая страница"
-            >
-              <Icons.ChevronRight className="w-4 h-4 text-[var(--text-primary)]" />
-            </button>
-          </div>
-          )}
-        </div>
-      </div>
-
+    <div className="space-y-2 sm:space-y-3">
       {activities.length === 0 ? (
-        <div className="text-center py-6 sm:py-8">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[var(--bg-tertiary)] rounded-lg flex items-center justify-center mx-auto mb-3 sm:mb-4">
-            <Icons.BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--text-tertiary)]" />
+        <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-10 text-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[var(--bg-tertiary)] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Icons.BarChart3 className="w-7 h-7 sm:w-8 sm:h-8 text-[var(--text-tertiary)]" />
           </div>
-          <p className="text-sm sm:text-base text-[var(--text-tertiary)]">{getText('activity.noActivity', 'Нет активности')}</p>
-          <p className="text-xs sm:text-sm text-[var(--text-tertiary)] mt-1">
+          <p className="text-sm sm:text-base font-medium text-[var(--text-primary)] mb-1">{getText('activity.noActivity', 'Нет активности')}</p>
+          <p className="text-xs sm:text-sm text-[var(--text-tertiary)]">
             {getText('activity.noActivityDesc', 'Начните создавать тесты...')}
           </p>
         </div>
       ) : (
-        <div className="space-y-2 sm:space-y-4">
-          {paginatedActivities.map((activity) => {
+        <div className="space-y-2 sm:space-y-3">
+          {recentActivities.map((activity) => {
             const Icon = Icons[activity.icon] || Icons.Activity
             const title = getText(`activity.${activity.activityKey}.title`, activity.type)
             const description = getText(`activity.${activity.activityKey}.description`, '')
@@ -191,19 +134,26 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ teacherId }) => {
             return (
               <div
                 key={activity.id}
-                className="flex items-start space-x-3 p-3 sm:p-4 rounded-lg sm:rounded-xl hover:bg-[var(--bg-hover)] transition-colors"
+                className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-colors"
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--text-primary)]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[var(--text-primary)] text-xs sm:text-sm truncate">{title}</p>
-                  {description && (
-                    <p className="text-xs text-[var(--text-tertiary)] mt-1 line-clamp-2">{description}</p>
-                  )}
-                  <p className="text-xs text-[var(--text-tertiary)] mt-1.5 sm:mt-2">
-                    {formatTimeAgo(activity.timestamp)}
-                  </p>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {/* Иконка */}
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--text-primary)]" />
+                  </div>
+                  
+                  {/* Контент */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-sm sm:text-base text-[var(--text-primary)] truncate">{title}</p>
+                      <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap flex-shrink-0">
+                        {formatTimeAgo(activity.timestamp)}
+                      </span>
+                    </div>
+                    {description && (
+                      <p className="text-xs sm:text-sm text-[var(--text-tertiary)] mt-1 truncate">{description}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )
