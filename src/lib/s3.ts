@@ -74,7 +74,7 @@ export function generateFileName(originalName: string, prefix: string = ''): str
 }
 
 /**
- * Получение конфигурации S3 из базы данных
+ * Получение конфигурации S3 из базы данных (PRIVATE)
  */
 async function getS3Config() {
   const url = await getSetting('PRIVATE_S3_URL')
@@ -100,6 +100,33 @@ async function getS3Config() {
     url: url.trim(),
     bucketName: bucketName.trim(),
     // Убираем все пробелы и переносы строк из ключей
+    accessKeyId: accessKeyId.trim().replace(/\s+/g, ''),
+    secretAccessKey: secretAccessKey.trim().replace(/\s+/g, '')
+  }
+}
+
+/**
+ * Получение конфигурации PUBLIC S3 из базы данных
+ */
+async function getPublicS3Config() {
+  const bucketName = await getSetting('PUBLIC_BUCKET_NAME')
+  const accessKeyId = await getSetting('PUBLIC_S3_ACCESS_KEY')
+  const secretAccessKey = await getSetting('PUBLIC_S3_SECRET_ACCESS_KEY')
+  // Используем тот же URL что и для PRIVATE или отдельный PUBLIC_S3_URL
+  const url = await getSetting('PUBLIC_S3_URL') || await getSetting('PRIVATE_S3_URL')
+
+  if (!url || !bucketName || !accessKeyId || !secretAccessKey) {
+    const missing = []
+    if (!url) missing.push('PUBLIC_S3_URL или PRIVATE_S3_URL')
+    if (!bucketName) missing.push('PUBLIC_BUCKET_NAME')
+    if (!accessKeyId) missing.push('PUBLIC_S3_ACCESS_KEY')
+    if (!secretAccessKey) missing.push('PUBLIC_S3_SECRET_ACCESS_KEY')
+    throw new Error(`PUBLIC S3 конфигурация не найдена в базе данных. Отсутствуют: ${missing.join(', ')}`)
+  }
+
+  return {
+    url: url.trim(),
+    bucketName: bucketName.trim(),
     accessKeyId: accessKeyId.trim().replace(/\s+/g, ''),
     secretAccessKey: secretAccessKey.trim().replace(/\s+/g, '')
   }
@@ -171,13 +198,41 @@ function parseS3Endpoint(url: string): { endpoint: string; region: string; force
 }
 
 /**
- * Инициализация S3 клиента
+ * Инициализация S3 клиента (PRIVATE)
  */
 async function getS3Client() {
   const config = await getS3Config()
   const { endpoint, region, forcePathStyle } = parseS3Endpoint(config.url)
 
   console.log('S3 конфигурация:', {
+    endpoint,
+    region,
+    bucketName: config.bucketName,
+    forcePathStyle,
+    hasAccessKey: !!config.accessKeyId,
+    hasSecretKey: !!config.secretAccessKey,
+    accessKeyPreview: config.accessKeyId ? `${config.accessKeyId.substring(0, 8)}...` : 'не указан'
+  })
+
+  return new S3Client({
+    endpoint,
+    region,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+    forcePathStyle,
+  })
+}
+
+/**
+ * Инициализация PUBLIC S3 клиента
+ */
+async function getPublicS3Client() {
+  const config = await getPublicS3Config()
+  const { endpoint, region, forcePathStyle } = parseS3Endpoint(config.url)
+
+  console.log('PUBLIC S3 конфигурация:', {
     endpoint,
     region,
     bucketName: config.bucketName,
@@ -271,7 +326,7 @@ export async function uploadFileToS3(
 }
 
 /**
- * Удаление файла из S3
+ * Удаление файла из S3 (PRIVATE)
  */
 export async function deleteFileFromS3(fileUrl: string): Promise<void> {
   try {
@@ -314,5 +369,151 @@ export async function deleteFileFromS3(fileUrl: string): Promise<void> {
     
     throw new Error('Не удалось удалить файл из S3')
   }
+}
+
+/**
+ * Загрузка файла в PUBLIC S3 (для фото профилей преподавателей)
+ */
+export async function uploadFileToPublicS3(
+  file: Buffer,
+  fileName: string,
+  contentType: string,
+  s3Path: string
+): Promise<string> {
+  try {
+    const config = await getPublicS3Config()
+    const { endpoint } = parseS3Endpoint(config.url)
+    const s3Client = await getPublicS3Client()
+
+    // Нормализация пути
+    const normalizedPath = s3Path.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')
+    const normalizedFileName = fileName.replace(/^\/+/, '')
+    
+    // Формирование ключа (путь в S3)
+    const key = `${normalizedPath}/${normalizedFileName}`.replace(/\/+/g, '/')
+
+    // Загружаем файл
+    const command = new PutObjectCommand({
+      Bucket: config.bucketName,
+      Key: key,
+      Body: file,
+      ContentType: contentType,
+    })
+
+    await s3Client.send(command)
+
+    // Формируем публичный URL файла
+    const fileUrl = `${endpoint}/${config.bucketName}/${key}`
+    
+    console.log('Файл успешно загружен в PUBLIC S3:', fileUrl)
+    
+    return fileUrl
+  } catch (error: any) {
+    console.error('Ошибка загрузки файла в PUBLIC S3:', error)
+    
+    if (error?.Code === 'InvalidAccessKeyId' || error?.name === 'InvalidAccessKeyId') {
+      throw new Error('Неверный Access Key ID. Проверьте значение PUBLIC_S3_ACCESS_KEY в настройках.')
+    }
+    
+    if (error?.Code === 'SignatureDoesNotMatch' || error?.name === 'SignatureDoesNotMatch') {
+      throw new Error('Неверный Secret Access Key. Проверьте значение PUBLIC_S3_SECRET_ACCESS_KEY в настройках.')
+    }
+    
+    if (error?.Code === 'AccessDenied' || error?.name === 'AccessDenied') {
+      throw new Error('Доступ запрещен. Проверьте права доступа для указанных ключей.')
+    }
+    
+    if (error?.Code === 'NoSuchBucket' || error?.name === 'NoSuchBucket') {
+      throw new Error(`Bucket не найден. Проверьте значение PUBLIC_BUCKET_NAME в настройках.`)
+    }
+    
+    if (error instanceof Error) {
+      if (error.message.includes('S3 конфигурация') || error.message.includes('PUBLIC_S3')) {
+        throw error
+      }
+      throw new Error(`Ошибка загрузки в PUBLIC S3: ${error.message}`)
+    }
+    
+    throw new Error('Не удалось загрузить файл в PUBLIC S3. Проверьте настройки S3 в базе данных.')
+  }
+}
+
+/**
+ * Удаление файла из PUBLIC S3
+ */
+export async function deleteFileFromPublicS3(fileUrl: string): Promise<void> {
+  try {
+    const config = await getPublicS3Config()
+    const s3Client = await getPublicS3Client()
+
+    // Извлечение ключа из URL
+    const urlParts = fileUrl.split('/')
+    const bucketIndex = urlParts.indexOf(config.bucketName)
+    
+    if (bucketIndex === -1) {
+      console.warn('Bucket не найден в URL, пробуем извлечь ключ иначе:', fileUrl)
+      // Попробуем извлечь путь после домена
+      const urlObj = new URL(fileUrl)
+      const pathParts = urlObj.pathname.split('/').filter(Boolean)
+      if (pathParts.length > 1 && pathParts[0] === config.bucketName) {
+        const key = pathParts.slice(1).join('/')
+        const command = new DeleteObjectCommand({
+          Bucket: config.bucketName,
+          Key: key,
+        })
+        await s3Client.send(command)
+        console.log('Файл успешно удален из PUBLIC S3:', fileUrl)
+        return
+      }
+      throw new Error('Неверный URL файла: bucket не найден в URL')
+    }
+    
+    const key = urlParts.slice(bucketIndex + 1).join('/')
+    
+    if (key.endsWith('/') || !key.includes('.')) {
+      throw new Error('Нельзя удалить папку, только файлы')
+    }
+    
+    const command = new DeleteObjectCommand({
+      Bucket: config.bucketName,
+      Key: key,
+    })
+
+    await s3Client.send(command)
+    
+    console.log('Файл успешно удален из PUBLIC S3:', fileUrl)
+  } catch (error: any) {
+    console.error('Ошибка удаления файла из PUBLIC S3:', error)
+    
+    if (error instanceof Error) {
+      throw error
+    }
+    
+    throw new Error('Не удалось удалить файл из PUBLIC S3')
+  }
+}
+
+/**
+ * Проверка, является ли URL ссылкой на S3 хранилище
+ */
+export function isS3Url(url: string | null | undefined): boolean {
+  if (!url) return false
+  
+  // Проверяем типичные признаки S3 URL
+  return (
+    url.includes('s3.') ||
+    url.includes('amazonaws.com') ||
+    url.includes('storage.yandexcloud.net') ||
+    url.includes('twcstorage.ru') ||
+    url.includes('teacher_profile_photos') // Наша папка для фото профилей
+  )
+}
+
+/**
+ * Проверка, является ли URL ссылкой на Telegram
+ */
+export function isTelegramUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  return url.includes('api.telegram.org')
 }
 

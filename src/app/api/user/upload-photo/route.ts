@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { uploadFileToPublicS3, deleteFileFromPublicS3, isS3Url, generateFileName } from '@/lib/s3'
+
+// Путь для хранения фото профилей преподавателей в S3
+const TEACHER_PROFILE_PHOTOS_PATH = 'teacher_profile_photos'
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,24 +43,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Создаем директорию для загрузок если её нет
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'profiles')
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
+    // Получаем текущее фото профиля для последующего удаления
+    const currentUser = await prisma.users.findUnique({
+      where: { id: user.id },
+      select: { profile_photo_url: true }
+    })
+
+    const oldPhotoUrl = currentUser?.profile_photo_url
 
     // Генерируем уникальное имя файла
-    const fileExtension = file.name.split('.').pop()
-    const fileName = `${user.id}_${Date.now()}.${fileExtension}`
-    const filePath = join(uploadsDir, fileName)
+    const fileName = generateFileName(file.name, `teacher_${user.id}`)
 
-    // Сохраняем файл
+    // Конвертируем файл в Buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filePath, buffer)
 
-    // Создаем URL для доступа к файлу
-    const fileUrl = `/uploads/profiles/${fileName}`
+    // Загружаем файл в PUBLIC S3
+    const fileUrl = await uploadFileToPublicS3(
+      buffer,
+      fileName,
+      file.type,
+      TEACHER_PROFILE_PHOTOS_PATH
+    )
 
     // Обновляем URL фото в базе данных
     await prisma.users.update({
@@ -70,6 +75,17 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Удаляем старое фото из S3 (если оно было в S3)
+    if (oldPhotoUrl && isS3Url(oldPhotoUrl)) {
+      try {
+        await deleteFileFromPublicS3(oldPhotoUrl)
+        console.log('✅ Старое фото профиля удалено из S3:', oldPhotoUrl)
+      } catch (deleteError) {
+        // Логируем ошибку, но не прерываем процесс
+        console.warn('⚠️ Не удалось удалить старое фото из S3:', deleteError)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Фото профиля успешно обновлено',
@@ -77,11 +93,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Upload photo error:', error)
+    
+    // Возвращаем более информативную ошибку
+    const errorMessage = error instanceof Error ? error.message : 'Внутренняя ошибка сервера'
+    
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
 }
-
-

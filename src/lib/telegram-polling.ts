@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { getTeacherBotToken, getTeacherSiteUrl, getAdminTelegramLogin, getTeacherBotUsername, getVerificationMessages } from './settings'
 import { generateAndStoreVerificationCode } from './verification'
+import { isS3Url, isTelegramUrl } from './s3'
 
 // Дефолтные сообщения (используются как fallback)
 const defaultMessages = {
@@ -534,7 +535,7 @@ class TelegramPollingService {
     
     // 1. Проверка: уже подключен ли этот Telegram к пользователю
     if (dbUser.telegram_id === telegramIdString) {
-      // Обновление username и фото профиля
+      // Обновление username и фото профиля (с учетом S3)
       await this.updateUserTelegramData(user, dbUser)
       await this.sendMessage(user.id, msg.alreadyConnected)
       return
@@ -550,21 +551,22 @@ class TelegramPollingService {
       return
     }
     
-    // 3. Удаление старого фото из S3 (если есть)
-    if (dbUser.profile_photo_url) {
-      await this.deleteOldPhotoFromS3(dbUser.profile_photo_url)
+    // 3. Проверяем, есть ли у пользователя фото из S3
+    const currentPhotoUrl = dbUser.profile_photo_url
+    const isPhotoFromS3 = isS3Url(currentPhotoUrl)
+    
+    // 4. Получение фото профиля из Telegram (только если нет фото из S3)
+    let profilePhotoUrl: string | null = currentPhotoUrl
+    
+    if (!isPhotoFromS3) {
+      // Если нет фото из S3, получаем из Telegram
+      profilePhotoUrl = await this.getTelegramProfilePhoto(user.id)
+      console.log(`📷 Получено фото из Telegram для ${dbUser.login}`)
+    } else {
+      console.log(`📷 У пользователя ${dbUser.login} есть фото из S3 - сохраняем его`)
     }
     
-    // 4. Получение фото профиля из Telegram
-    let profilePhotoUrl = await this.getTelegramProfilePhoto(user.id)
-    
-    // 5. Загрузка фото в S3 (опционально, если есть S3 функции)
-    // Если нет S3, используем оригинальный URL из Telegram
-    // if (profilePhotoUrl) {
-    //   profilePhotoUrl = await this.uploadPhotoToS3(profilePhotoUrl, dbUser.id)
-    // }
-    
-    // 6. Обновление данных пользователя в БД
+    // 5. Обновление данных пользователя в БД
     await prisma.users.update({
       where: { id: dbUser.id },
       data: {
@@ -782,34 +784,47 @@ class TelegramPollingService {
 
   /**
    * Обновление данных Telegram пользователя (username и фото)
+   * Фото профиля обновляется только если текущее фото из Telegram (не из S3)
    */
   private async updateUserTelegramData(user: any, dbUser: any) {
     try {
       console.log(`🔄 Обновление данных Telegram для пользователя ${dbUser.login}...`)
       
-      // 1. Получаем актуальное фото профиля
-      const profilePhotoUrl = await this.getTelegramProfilePhoto(user.id)
+      // 1. Проверяем, нужно ли обновлять фото
+      // Если фото загружено в S3 (через настройки профиля), НЕ обновляем его
+      const currentPhotoUrl = dbUser.profile_photo_url
+      const isPhotoFromS3 = isS3Url(currentPhotoUrl)
+      const isPhotoFromTelegram = isTelegramUrl(currentPhotoUrl)
       
       // 2. Получаем актуальный username из Telegram
       const telegramUsername = user.username || null
       
-      // 3. Проверяем, нужно ли обновлять данные
-      const needsUpdate = 
-        (profilePhotoUrl && profilePhotoUrl !== dbUser.profile_photo_url) ||
-        (telegramUsername !== dbUser.social_networks?.telegram_login)
+      // 3. Получаем актуальное фото профиля только если текущее фото из Telegram или отсутствует
+      let profilePhotoUrl: string | null = null
+      let shouldUpdatePhoto = false
       
-      if (!needsUpdate) {
+      if (!currentPhotoUrl || isPhotoFromTelegram) {
+        // Фото отсутствует или из Telegram - можно обновлять
+        profilePhotoUrl = await this.getTelegramProfilePhoto(user.id)
+        shouldUpdatePhoto = profilePhotoUrl !== null && profilePhotoUrl !== currentPhotoUrl
+        
+        if (isPhotoFromS3) {
+          console.log(`📷 Фото профиля для ${dbUser.login} загружено из S3 - пропускаем обновление фото`)
+        }
+      } else if (isPhotoFromS3) {
+        console.log(`📷 Фото профиля для ${dbUser.login} загружено из S3 - пропускаем обновление фото`)
+      }
+      
+      // 4. Проверяем, нужно ли обновлять username
+      const shouldUpdateUsername = telegramUsername !== dbUser.social_networks?.telegram_login
+      
+      if (!shouldUpdatePhoto && !shouldUpdateUsername) {
         console.log(`✅ Данные Telegram для ${dbUser.login} актуальны`)
         return
       }
       
-      // 4. Удаление старого фото если оно изменилось
-      if (profilePhotoUrl && profilePhotoUrl !== dbUser.profile_photo_url && dbUser.profile_photo_url) {
-        await this.deleteOldPhotoFromS3(dbUser.profile_photo_url)
-      }
-      
-      // 5. Обновление в БД (только если есть изменения)
-      if (profilePhotoUrl && profilePhotoUrl !== dbUser.profile_photo_url) {
+      // 5. Обновление фото в БД (только если нужно и фото не из S3)
+      if (shouldUpdatePhoto && profilePhotoUrl) {
         await prisma.users.update({
           where: { id: dbUser.id },
           data: {
@@ -821,7 +836,7 @@ class TelegramPollingService {
       }
       
       // 6. Обновление username в social_networks
-      if (telegramUsername !== dbUser.social_networks?.telegram_login) {
+      if (shouldUpdateUsername) {
         await prisma.social_networks.upsert({
           where: { user_id: dbUser.id },
           create: {

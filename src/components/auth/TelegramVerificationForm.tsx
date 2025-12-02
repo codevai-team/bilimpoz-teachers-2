@@ -193,27 +193,27 @@ const TelegramVerificationForm: React.FC = () => {
   }
 
   return (
-    <div className="rounded-2xl p-10 shadow-2xl" style={{ backgroundColor: '#151515' }}>
+    <div className="rounded-2xl p-6 sm:p-10 shadow-2xl" style={{ backgroundColor: '#151515' }}>
       {/* Заголовок формы */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center mb-4">
-          <div className="bg-gray-500/20 p-3 rounded-full">
-            <Icons.MessageCircle className="w-8 h-8 text-white" />
+      <div className="text-center mb-6 sm:mb-8">
+        <div className="flex items-center justify-center mb-3 sm:mb-4">
+          <div className="bg-gray-500/20 p-2.5 sm:p-3 rounded-full">
+            <Icons.MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Подтверждение входа</h2>
-        <p className="text-gray-400 text-sm">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Подтверждение входа</h2>
+        <p className="text-gray-400 text-xs sm:text-sm px-2">
           Введите 6-значный код, отправленный в ваш Telegram
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
         {/* Поля ввода кода */}
         <div>
-          <label className="block text-sm font-medium text-white mb-4">
+          <label className="block text-sm font-medium text-white mb-3 sm:mb-4 text-center sm:text-left">
             Код подтверждения
           </label>
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-2 sm:gap-3 justify-center">
             {code.map((digit, index) => (
               <input
                 key={index}
@@ -226,9 +226,9 @@ const TelegramVerificationForm: React.FC = () => {
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
                 className={`
-                  w-12 h-14 text-center text-xl font-bold
+                  w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold
                   text-white placeholder-gray-400
-                  rounded-xl border-2
+                  rounded-lg sm:rounded-xl border-2
                   focus:outline-none focus:border-white
                   hover:border-gray-500
                   transition-all duration-300 ease-in-out
@@ -246,14 +246,14 @@ const TelegramVerificationForm: React.FC = () => {
         {/* Таймер и повторная отправка */}
         <div className="text-center">
           {timeLeft > 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-400">
               Код действителен еще: <span className="text-white font-mono">{formatTime(timeLeft)}</span>
             </p>
           ) : (
             <button
               type="button"
               onClick={handleResendCode}
-              className="text-sm text-gray-400 hover:text-white transition-colors font-medium"
+              className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors font-medium"
             >
               Отправить ещё
             </button>
@@ -262,16 +262,16 @@ const TelegramVerificationForm: React.FC = () => {
 
         {/* Блок ошибок */}
         {error && (
-          <div className="p-4 rounded-lg border border-red-500/30 bg-red-500/10">
+          <div className="p-3 sm:p-4 rounded-lg border border-red-500/30 bg-red-500/10">
             <div className="flex items-center gap-2">
-              <Icons.AlertCircle className="w-5 h-5 text-red-400" />
-              <span className="text-red-400 text-sm font-medium">{error}</span>
+              <Icons.AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0" />
+              <span className="text-red-400 text-xs sm:text-sm font-medium">{error}</span>
             </div>
           </div>
         )}
 
         {/* Кнопки формы */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <Button
             type="submit"
             variant="primary"
@@ -286,9 +286,9 @@ const TelegramVerificationForm: React.FC = () => {
             <button
               type="button"
               onClick={handleBackToLogin}
-              className="text-gray-400 hover:text-gray-300 transition-colors text-sm inline-flex items-center gap-2"
+              className="text-gray-400 hover:text-gray-300 transition-colors text-xs sm:text-sm inline-flex items-center gap-1.5 sm:gap-2"
             >
-              <Icons.ArrowLeft className="w-4 h-4" />
+              <Icons.ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Вернуться к входу
             </button>
           </div>
@@ -299,4 +299,3 @@ const TelegramVerificationForm: React.FC = () => {
 }
 
 export default TelegramVerificationForm
-
