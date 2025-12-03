@@ -259,7 +259,7 @@ const QuestionDetailsModal: React.FC<QuestionDetailsModalProps> = ({
               </h3>
 
               <div className="space-y-3">
-                {question.answer_variants.map((answer, index) => {
+                {(question.answer_variants || []).map((answer, index) => {
                   const isCorrect = question.correct_variant_index === index
                   return (
                     <div key={index} className="flex items-start gap-3">

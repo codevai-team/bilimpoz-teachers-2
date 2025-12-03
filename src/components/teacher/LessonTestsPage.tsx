@@ -204,8 +204,10 @@ const LessonTestsPage: React.FC<LessonTestsPageProps> = ({
       {/* Плавающее меню добавления теста */}
       <div className="fixed bottom-4 right-16 z-50">
         <TestTypeSelectorMenu
-          onSelectType={handleAddTest}
+          onAddQuestion={handleAddTest}
           disabled={disabled || (totalQuestions ? testBlocks.length >= totalQuestions : false)}
+          totalQuestions={totalQuestions}
+          currentQuestionsCount={testBlocks.length}
         />
       </div>
     </>

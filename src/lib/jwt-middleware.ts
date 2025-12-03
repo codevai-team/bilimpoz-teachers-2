@@ -56,7 +56,12 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     // Верификация токена с помощью jose
     const { payload } = await jwtVerify(token, secret)
     
-    return payload as JWTPayload
+    // Проверяем, что payload содержит необходимые поля
+    if (payload && typeof payload === 'object' && 'userId' in payload && 'login' in payload && 'role' in payload) {
+      return payload as unknown as JWTPayload
+    }
+    
+    return null
   } catch (error) {
     // Токен невалиден или истек
     return null

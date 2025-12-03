@@ -21,7 +21,7 @@ export async function PUT(
     }
 
     // Проверка роли
-    if (user.role !== 'teacher') {
+    if (user.role !== 'teacher' && user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Доступ запрещен' },
         { status: 403 }
@@ -204,7 +204,7 @@ export async function DELETE(
     }
 
     // Проверка роли
-    if (user.role !== 'teacher') {
+    if (user.role !== 'teacher' && user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Доступ запрещен' },
         { status: 403 }

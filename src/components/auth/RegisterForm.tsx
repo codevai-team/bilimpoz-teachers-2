@@ -187,7 +187,7 @@ export default function RegisterForm() {
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
             placeholder={getText('auth.register.fullNamePlaceholder', 'Введите ваше полное имя')}
-            error={errors.name}
+            error={!!errors.name}
             disabled={isLoading}
           />
         </div>
@@ -201,7 +201,7 @@ export default function RegisterForm() {
             value={formData.login}
             onChange={(e) => handleInputChange('login', e.target.value)}
             placeholder={getText('auth.register.loginPlaceholder', 'Введите логин')}
-            error={errors.login}
+            error={!!errors.login}
             disabled={isLoading}
           />
         </div>
@@ -255,7 +255,7 @@ export default function RegisterForm() {
                 }
               }}
               placeholder={getText('auth.register.passwordPlaceholder', 'Введите пароль')}
-              error={errors.password}
+              error={!!errors.password}
               disabled={isLoading}
               maxLength={50}
             />

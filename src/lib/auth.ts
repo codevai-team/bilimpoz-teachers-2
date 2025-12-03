@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from './prisma'
-import { Prisma, PrismaClientInitializationError } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
 const JWT_EXPIRES_IN = '7d'
@@ -131,8 +131,8 @@ export async function auth(request: NextRequest) {
     return user
   } catch (error) {
     // Обработка ошибок подключения к БД
-    if (error instanceof PrismaClientInitializationError || 
-        (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P1001')) {
+    if ((error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P1001') ||
+        (error instanceof Error && error.message.includes('Can\'t reach database server'))) {
       throw new Error('DATABASE_CONNECTION_ERROR')
     }
     throw error

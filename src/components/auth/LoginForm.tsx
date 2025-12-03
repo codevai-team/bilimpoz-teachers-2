@@ -20,7 +20,7 @@ export default function LoginForm() {
   const [mounted, setMounted] = useState(false)
   
   const router = useRouter()
-  const { loadUser } = useAuth()
+  const { refreshUser } = useAuth()
 
   useEffect(() => {
     setMounted(true)
@@ -172,7 +172,7 @@ export default function LoginForm() {
             value={formData.login}
             onChange={(e) => handleInputChange('login', e.target.value)}
             placeholder={getText('auth.loginForm.loginPlaceholder', 'Введите ваш логин')}
-            error={errors.login}
+            error={!!errors.login}
             disabled={isLoading}
           />
         </div>
@@ -187,7 +187,7 @@ export default function LoginForm() {
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
               placeholder={getText('auth.loginForm.passwordPlaceholder', 'Введите ваш пароль')}
-              error={errors.password}
+              error={!!errors.password}
               disabled={isLoading}
             />
             <button

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверка роли
-    if (user.role !== 'teacher') {
+    if (user.role !== 'teacher' && user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Доступ запрещен' },
         { status: 403 }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверка роли
-    if (user.role !== 'teacher') {
+    if (user.role !== 'teacher' && user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Доступ запрещен' },
         { status: 403 }

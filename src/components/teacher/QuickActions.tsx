@@ -93,7 +93,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ teacherId, onTabChange }) =
             <button
               key={index}
               onClick={action.action}
-              className="p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl transition-all duration-300 text-left group relative overflow-hidden bg-[#242424] hover:bg-[#363636] active:scale-95"
+              className="p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl transition-all duration-300 text-left group relative overflow-hidden bg-[var(--bg-hover)] hover:bg-[var(--bg-active)] active:scale-95"
             >
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 min-w-[2.25rem] sm:min-w-[2.5rem] flex-shrink-0 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center">

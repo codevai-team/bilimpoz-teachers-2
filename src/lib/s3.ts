@@ -310,7 +310,8 @@ export async function uploadFileToS3(
     }
     
     if (error?.Code === 'NoSuchBucket' || error?.name === 'NoSuchBucket') {
-      throw new Error(`Bucket "${config.bucketName}" не найден. Проверьте значение PRIVATE_BUCKET_NAME в настройках.`)
+      const bucketName = (await getS3Config()).bucketName || 'не указан'
+      throw new Error(`Bucket "${bucketName}" не найден. Проверьте значение PRIVATE_BUCKET_NAME в настройках.`)
     }
     
     if (error instanceof Error) {

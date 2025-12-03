@@ -1617,7 +1617,7 @@ export default function TestEditorPage() {
           }
           
           // Валидируем данные вопроса перед отправкой
-          if (!questionData.question || !questionData.question.trim()) {
+          if (!questionData || !questionData.question || !questionData.question.trim()) {
             console.error(`Вопрос ${question.id}: Текст вопроса пустой`)
             validationErrors.push(`Вопрос ${question.id}: Текст вопроса не заполнен`)
             errorCount++

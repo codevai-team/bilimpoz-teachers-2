@@ -34,9 +34,9 @@ if (!i18n.isInitialized) {
       // Отключаем предупреждения о missingKey в консоли
       saveMissing: false,
       updateMissing: false,
-      missingKeyHandler: (lngs: string[], ns: string, key: string) => {
-        // Не выводим предупреждения в консоль, просто возвращаем ключ
-        return key;
+      missingKeyHandler: (lngs: readonly string[], ns: string, key: string) => {
+        // Не выводим предупреждения в консоль
+        // Функция должна возвращать void, но i18next сам обработает отсутствующий ключ
       },
       
       interpolation: {

@@ -60,7 +60,7 @@ const TelegramConnectionForm: React.FC<TelegramConnectionFormProps> = ({
   // Формируем ссылку на бота с параметрами
   const getTelegramBotUrl = () => {
     // Используем язык пользователя из пропсов (из БД)
-    const userLanguage = language === 'kg' || language === 'ky' ? 'kg' : 'ru'
+    const userLanguage = language === 'kg' ? 'kg' : 'ru'
     return `https://t.me/${botUsername}?start=register_${login}__${userLanguage}`
   }
 
