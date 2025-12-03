@@ -6,6 +6,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import '@uiw/react-md-editor/markdown-editor.css'
+import { useMobileKeyboard } from '@/hooks/useMobileKeyboard'
 
 const MDEditor = dynamic(
   () => import('@uiw/react-md-editor').then((mod) => mod.default),
@@ -29,6 +30,7 @@ export default function LatexPreviewModal({
 }: LatexPreviewModalProps) {
   const [latexCode, setLatexCode] = useState(initialLatexCode)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const { isKeyboardOpen, viewportHeight, isMobile } = useMobileKeyboard()
 
   useEffect(() => {
     if (isOpen) {
@@ -51,9 +53,42 @@ export default function LatexPreviewModal({
     onClose()
   }
 
+  // Вычисляем стили для правильного позиционирования на мобильных
+  const getModalStyles = () => {
+    if (!isMobile) {
+      return "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+    }
+    
+    if (isKeyboardOpen) {
+      // На мобильных с открытой клавиатурой позиционируем модальное окно в верхней части
+      return "fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-75 pt-4"
+    }
+    
+    return "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+  }
+
+  const getModalContainerStyles = () => {
+    if (!isMobile) {
+      return "bg-[#1a1a1a] rounded-lg border border-gray-700 w-full max-w-4xl max-h-[90vh] flex flex-col m-4"
+    }
+    
+    if (isKeyboardOpen) {
+      // На мобильных с клавиатурой уменьшаем высоту и позиционируем выше
+      const maxHeight = Math.min(viewportHeight * 0.6, 400)
+      return `bg-[#1a1a1a] rounded-lg border border-gray-700 w-full max-w-4xl flex flex-col m-4`
+    }
+    
+    return "bg-[#1a1a1a] rounded-lg border border-gray-700 w-full max-w-4xl max-h-[90vh] flex flex-col m-4"
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-      <div className="bg-[#1a1a1a] rounded-lg border border-gray-700 w-full max-w-4xl max-h-[90vh] flex flex-col m-4">
+    <div className={getModalStyles()}>
+      <div 
+        className={getModalContainerStyles()}
+        style={isMobile && isKeyboardOpen ? { 
+          maxHeight: `${Math.min(viewportHeight * 0.6, 400)}px` 
+        } : undefined}
+      >
         {/* Заголовок */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">
@@ -87,7 +122,7 @@ export default function LatexPreviewModal({
               preview={isPreviewMode ? "preview" : "edit"}
               hideToolbar={true}
               visibleDragbar={false}
-              height={400}
+              height={isMobile && isKeyboardOpen ? Math.min(viewportHeight * 0.3, 200) : 400}
               previewOptions={{
                 remarkPlugins: [remarkMath],
                 rehypePlugins: [rehypeKatex],

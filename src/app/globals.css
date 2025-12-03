@@ -82,7 +82,7 @@
   
   body {
     /* Минимальная высота для iOS Safari - обеспечиваем достаточную высоту для скролла */
-    min-height: 100vh;
+    min-height: 100dvh;
     min-height: -webkit-fill-available;
     /* Убираем overflow: hidden */
     overflow: visible;
@@ -228,6 +228,27 @@
   border-radius: 4px;
 }
 
+/* Стили для мобильных модальных окон */
+@media (max-width: 768px) {
+  .mobile-modal.keyboard-open {
+    align-items: flex-start !important;
+    padding-top: 1rem !important;
+  }
+  
+  .mobile-container {
+    margin: 0 !important;
+  }
+}
+
+/* Дополнительные стили для iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  .mobile-modal.keyboard-open {
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding-top: 1rem !important;
+  }
+}
+
 /* Shimmer анимация для skeleton loading */
 @keyframes shimmer {
   0% {
@@ -264,7 +285,8 @@
   
   /* Убеждаемся, что fixed элементы работают корректно */
   .lg\:hidden.fixed {
-    position: fixed;
+    position: sticky;
+    bottom: 0;
     /* Hardware acceleration для лучшей производительности */
     transform: translate3d(0, 0, 0);
     -webkit-transform: translate3d(0, 0, 0);

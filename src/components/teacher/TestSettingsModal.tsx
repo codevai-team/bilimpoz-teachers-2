@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input'
 import Select, { SelectOption } from '@/components/ui/Select'
 import Toast, { ToastVariant } from '@/components/ui/Toast'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useMobileKeyboard } from '@/hooks/useMobileKeyboard'
 
 interface Test {
   id: string
@@ -35,7 +36,16 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
   isSubmitting = false
 }) => {
   const { t, ready } = useTranslation()
+  const { isKeyboardOpen, viewportHeight, isMobile } = useMobileKeyboard()
   const [mounted, setMounted] = useState(false)
+  const [forceUpdate, setForceUpdate] = useState(0)
+
+  // Принудительное обновление при изменении состояния клавиатуры
+  useEffect(() => {
+    if (isMobile) {
+      setForceUpdate(prev => prev + 1)
+    }
+  }, [isKeyboardOpen, isMobile])
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -66,6 +76,12 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
       // Сохраняем текущую позицию скролла
       scrollYRef.current = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
       
+      // На мобильных с открытой клавиатурой не блокируем скролл полностью
+      if (isMobile && isKeyboardOpen) {
+        console.log('📱 Skipping scroll lock for mobile with keyboard')
+        return
+      }
+      
       // Блокируем скролл на body и html (для iOS Safari)
       document.body.style.position = 'fixed'
       document.body.style.top = `-${scrollYRef.current}px`
@@ -85,7 +101,7 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
         window.scrollTo(0, scrollYRef.current)
       }
     }
-  }, [isOpen])
+  }, [isOpen, isMobile, isKeyboardOpen])
 
   useEffect(() => {
     if (isOpen && test) {
@@ -170,19 +186,71 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
 
   if (!isOpen) return null
 
+  // Отладочная информация
+  console.log('🔧 TestSettingsModal state:', {
+    isOpen,
+    isMobile,
+    isKeyboardOpen,
+    viewportHeight
+  })
+
+  // Вычисляем стили для правильного позиционирования на мобильных
+  const getModalStyles = () => {
+    if (!isMobile) {
+      return "fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
+    }
+    
+    if (isKeyboardOpen) {
+      // На мобильных с открытой клавиатурой позиционируем модальное окно в верхней части
+      console.log('📱 Using mobile keyboard layout')
+      return "fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-2 pt-4"
+    }
+    
+    console.log('📱 Using mobile normal layout')
+    return "fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
+  }
+
+  const getModalContainerStyles = () => {
+    if (!isMobile) {
+      return "bg-[var(--bg-card)] rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-colors"
+    }
+    
+    if (isKeyboardOpen) {
+      // На мобильных с клавиатурой уменьшаем высоту и позиционируем выше
+      return "bg-[var(--bg-card)] rounded-xl shadow-2xl w-full max-w-2xl overflow-y-auto transition-colors"
+    }
+    
+    return "bg-[var(--bg-card)] rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-colors"
+  }
+
   return (
     <div 
-      className="fixed inset-0 bg-black/50 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      className={`${getModalStyles()} ${isMobile ? 'mobile-modal' : ''} ${isKeyboardOpen ? 'keyboard-open' : ''}`}
+      style={{ 
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        ...(isMobile && isKeyboardOpen && {
+          alignItems: 'flex-start',
+          paddingTop: '1rem'
+        })
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose()
         }
       }}
     >
-      <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-colors">
+      <div 
+        className={`${getModalContainerStyles()} ${isMobile ? 'mobile-container' : ''}`}
+        style={{
+          ...(isMobile && isKeyboardOpen && { 
+            maxHeight: viewportHeight > 0 ? `${Math.min(viewportHeight * 0.8, 600)}px` : '70vh',
+            marginTop: 0,
+            height: 'auto'
+          })
+        }}
+      >
         {/* Заголовок */}
-        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-gray-800 dark:border-gray-800">
+        <div className={`flex items-center justify-between border-b border-gray-800 dark:border-gray-800 ${isMobile && isKeyboardOpen ? 'p-3 pb-2' : 'p-4 sm:p-6 pb-3 sm:pb-4'}`}>
           <h3 className="text-base sm:text-lg font-semibold text-[var(--text-primary)] transition-colors">
             {getText('testEditor.editTest', 'Редактировать тест')}
           </h3>
@@ -196,14 +264,14 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
         </div>
 
         {/* Форма */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <form onSubmit={handleSubmit} className={`${isMobile && isKeyboardOpen ? 'p-3 space-y-3' : 'p-4 sm:p-6 space-y-4 sm:space-y-6'}`}>
           {/* Основная информация */}
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] border-b border-gray-800 dark:border-gray-800 pb-3 sm:pb-4 mb-4 sm:mb-6 transition-colors">
+            <h2 className={`text-lg sm:text-xl font-semibold text-[var(--text-primary)] border-b border-gray-800 dark:border-gray-800 transition-colors ${isMobile && isKeyboardOpen ? 'pb-2 mb-3' : 'pb-3 sm:pb-4 mb-4 sm:mb-6'}`}>
               {getText('testEditor.basicInfo', 'Основная информация')}
             </h2>
             
-            <div className="space-y-4 sm:space-y-6">
+            <div className={isMobile && isKeyboardOpen ? 'space-y-3' : 'space-y-4 sm:space-y-6'}>
               {/* Название теста */}
               <div ref={nameRef}>
                 <label className="flex items-center text-xs sm:text-sm font-medium text-[var(--text-secondary)] mb-2 sm:mb-3 transition-colors">
@@ -250,7 +318,7 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
                   }}
                   placeholder={getText('testEditor.enterTestDescription', 'Введите описание теста')}
                   disabled={isSubmitting}
-                  rows={3}
+                  rows={isMobile && isKeyboardOpen ? 2 : 3}
                   maxLength={600}
                   className={`
                     w-full px-3 py-2.5 sm:px-5 sm:py-4 rounded-lg sm:rounded-xl text-sm sm:text-base text-[var(--text-primary)] placeholder-gray-400
@@ -258,7 +326,7 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
                     focus:outline-none focus:border-white hover:border-gray-500
                     ${errors.description ? 'border-red-500 focus:border-red-400' : 'border-gray-600'}
                     ${formData.description.length > 600 ? 'border-red-500' : ''}
-                    resize-vertical
+                    ${isMobile ? 'resize-none' : 'resize-vertical'}
                   `}
                 />
                 {errors.description && (
@@ -288,7 +356,7 @@ const TestSettingsModal: React.FC<TestSettingsModalProps> = ({
           </div>
 
           {/* Кнопки */}
-          <div className="flex justify-end gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-gray-800 dark:border-gray-800">
+          <div className={`flex justify-end gap-2 sm:gap-3 border-t border-gray-800 dark:border-gray-800 ${isMobile && isKeyboardOpen ? 'pt-3' : 'pt-4 sm:pt-6'}`}>
             <Button
               type="button"
               variant="outline"

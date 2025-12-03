@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from '@/components/ui/Icons';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useMobileKeyboard } from '@/hooks/useMobileKeyboard';
 import Tooltip from '@/components/ui/Tooltip';
 import { PiSigma, PiFunction } from 'react-icons/pi';
 import { AILoadingAnimation } from '@/components/ui/AILoadingAnimation';
@@ -31,6 +32,7 @@ interface TestToolbarProps {
 
 export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, onMagicWand, onSaveSelection, onTogglePreview, onExplainQuestion, activeFormats, isAiLoading = false, isImageConverting = false, isKeyboardOpen = false }: TestToolbarProps) {
   const { t } = useTranslation();
+  const { isKeyboardOpen: mobileKeyboardOpen, isMobile } = useMobileKeyboard();
   const [showAiDropdown, setShowAiDropdown] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ bottom: '96px', left: '50%' });
@@ -38,6 +40,9 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
   const aiButtonRef = useRef<HTMLButtonElement>(null);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const savedActiveElementRef = useRef<HTMLElement | null>(null);
+
+  // Используем состояние клавиатуры из хука для мобильных устройств
+  const effectiveKeyboardOpen = isMobile ? mobileKeyboardOpen : isKeyboardOpen;
 
   // Монтирование компонента
   useEffect(() => {
@@ -48,17 +53,26 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
   useEffect(() => {
     if (showAiDropdown && aiButtonRef.current) {
       const buttonRect = aiButtonRef.current.getBoundingClientRect();
-      const isMobile = window.innerWidth < 640;
       
-      // Вычисляем позицию меню ВЫШЕ кнопки
-      const bottomPosition = window.innerHeight - buttonRect.top + 8; // 8px отступ над кнопкой
+      // Вычисляем позицию меню ВЫШЕ кнопки с дополнительным отступом
+      let bottomPosition = window.innerHeight - buttonRect.top + 12; // 12px отступ над кнопкой (было 8px)
+      
+      // На мобильных с открытой клавиатурой корректируем позицию
+      if (isMobile && effectiveKeyboardOpen) {
+        // Используем визуальную высоту viewport для более точного позиционирования
+        const visualHeight = window.visualViewport?.height || window.innerHeight;
+        bottomPosition = visualHeight - buttonRect.top + 12;
+      }
+      
+      // Позиционируем меню так, чтобы его левый край был на уровне правого края кнопки
+      const leftPosition = buttonRect.right; // Левый край меню = правый край кнопки
       
       setDropdownPosition({
         bottom: `${bottomPosition}px`,
-        left: '50%',
+        left: `${leftPosition}px`,
       });
     }
-  }, [showAiDropdown, isKeyboardOpen]);
+  }, [showAiDropdown, effectiveKeyboardOpen, isMobile]);
 
   // Сохранение активного элемента при открытии меню
   useEffect(() => {
@@ -259,7 +273,7 @@ export default function TestToolbar({ onFormat, isPreviewMode, onImageToLatex, o
               style={{
                 bottom: dropdownPosition.bottom,
                 left: dropdownPosition.left,
-                transform: 'translateX(-50%)',
+                transform: 'translateX(-50%)', // Меню начинается от правого края кнопки
               }}
               onMouseEnter={() => {
                 // Сохраняем активный элемент при наведении на меню

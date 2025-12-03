@@ -1790,6 +1790,11 @@ export default function TestEditorPage() {
         // Перезагружаем актуальные данные из БД после успешного сохранения
         console.log('Вопросы успешно сохранены/удалены, перезагружаем из БД')
         await reloadQuestionsFromDB()
+        
+        // Обновляем страницу для полного обновления интерфейса
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000) // Даем время показать уведомление об успехе
       } else if (errorCount > 0) {
         // Если есть только ошибки и нет успешных операций
         if (validationErrors.length > 0) {
