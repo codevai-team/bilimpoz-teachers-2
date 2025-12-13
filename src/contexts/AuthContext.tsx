@@ -107,10 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadUser(true)
   }, [loadUser])
 
-  // Загрузка пользователя при монтировании
+  // Загрузка пользователя при монтировании (только один раз)
   useEffect(() => {
     loadUser(true)
-  }, [loadUser])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, loading, error, logout, refreshUser }}>
